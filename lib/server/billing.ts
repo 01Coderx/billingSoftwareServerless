@@ -69,7 +69,7 @@ async function buildInvoice(input: any, existing: any = null) {
 
   let customer = null;
   if (input.customer?.id != null) {
-    const found = await Customer.findOne({ id: Number(input.customer.id) }).lean();
+    const found = await Customer.findOne({ id: Number(input.customer.id) }).lean<any>();
     if (!found) throw new Error(`Customer not found: ${input.customer.id}`);
     customer = { id: found.id, name: found.name, email: found.email || "", phone: found.phone || "", address: found.address || "" };
   }
@@ -82,7 +82,7 @@ async function buildInvoice(input: any, existing: any = null) {
     const productId = raw.product?.id ?? raw.productId;
     if (productId == null) throw new Error("Every invoice item must have a product id");
 
-    const product = await Product.findOne({ id: Number(productId) }).lean();
+    const product = await Product.findOne({ id: Number(productId) }).lean<any>();
     const existingItem = existing?.items?.find((item: any) => Number(item.product?.id) === Number(productId));
 
     if (!product && !existingItem) throw new Error(`Product not found: ${productId}`);
