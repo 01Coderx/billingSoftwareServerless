@@ -21,11 +21,19 @@ export function generateInvoicePdf(invoice: any): Promise<Buffer> {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    doc.font("Helvetica-Bold").fontSize(12).text("BILL / RECEIPT", { align: "center" }).moveDown(0.1);
-    doc.font("Helvetica-Bold").fontSize(7).text(`Invoice: ${invoice.invoiceNumber || "-"}`, 10, doc.y, {
-      width: width - 20, continued: true,
-    });
-    doc.font("Helvetica").fontSize(5.8).text(`Date: ${formatDate(invoice.createdAt)}`, { align: "right" });
+  doc.font("Helvetica-Bold")
+  .fontSize(7)
+  .text(`Invoice: ${invoice.invoiceNumber || "-"}`, 10, doc.y, {
+    width: width - 20,
+    align: "left",
+  });
+
+doc.font("Helvetica")
+  .fontSize(5.8)
+  .text(`Date: ${formatDate(invoice.createdAt)}`, 10, doc.y, {
+    width: width - 20,
+    align: "right",
+  });
 
     const customer = invoice.customer?.name || "Walk-in Customer";
     const phone = invoice.customer?.phone || "";
