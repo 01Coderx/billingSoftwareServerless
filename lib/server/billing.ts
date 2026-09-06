@@ -8,7 +8,10 @@ async function nextSequence(name: string) {
     { _id: name },
     { $inc: { seq: 1 } },
     { new: true, upsert: true, setDefaultsOnInsert: true }
-  ).lean();
+  ).lean<any>();
+   if (!counter) {
+    throw new Error("Could not generate sequence");
+  }
   return Number(counter.seq);
 }
 
