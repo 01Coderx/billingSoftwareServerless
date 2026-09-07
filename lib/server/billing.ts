@@ -115,7 +115,22 @@ async function buildInvoice(input: any, existing: any = null) {
   if (tax < 0 || discount < 0) throw new Error("Tax and discount cannot be negative");
 
   const total = money(Math.max(0, subtotal + tax - discount));
-  const id = existing?.id || await nextSequence("invoice");
+  let id = existing?.id;
+
+if (!id) {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const candidate = crypto.randomInt(100000, 999999);
+
+    if (!(await Invoice.exists({ id: candidate }))) {
+      id = candidate;
+      break;
+    }
+  }
+
+  if (!id) {
+    throw new Error("Could not generate a unique invoice ID");
+  }
+}
   return {
     id,
     invoiceNumber: existing?.invoiceNumber || `INV-${String(id).padStart(6, "0")}`,
