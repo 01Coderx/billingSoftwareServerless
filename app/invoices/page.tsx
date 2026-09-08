@@ -101,8 +101,8 @@ export default function InvoicesPage() {
         />
 ) : (
         <section className="card overflow-hidden">
-          <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
+          <div className="flex flex-col gap-3 border-b border-slate-100 p-5 md:flex-row md:items-center">
+            <div className="relative min-w-0 flex-1">
               <Search
                 size={17}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -118,7 +118,7 @@ export default function InvoicesPage() {
             {/* Add Date Filter Input Here */}
             <input
               type="date"
-              className="input w-full sm:w-[180px]"
+              className="input w-full md:w-[180px]"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
               aria-label="Filter bills by date"
@@ -140,19 +140,20 @@ export default function InvoicesPage() {
             </Button>
           </div>
 
-          <div className="hidden grid-cols-[1.2fr_1.2fr_.8fr_.8fr_90px] gap-4 border-b border-slate-100 px-5 py-3 text-[11px] font-black uppercase tracking-wider text-slate-400 md:grid">
-            <div>Bill</div>
-            <div>Customer</div>
-            <div>Date</div>
-            <div>Status</div>
-            <div />
-          </div>
+          <div className="hidden grid-cols-[1.2fr_1.2fr_.8fr_.8fr_.8fr_90px] gap-4 border-b border-slate-100 px-5 py-3 text-[11px] font-black uppercase tracking-wider text-slate-400 md:grid">
+  <div>Bill</div>
+  <div>Customer</div>
+  <div>Date</div>
+  <div>Status</div>
+  <div>Total</div>
+  <div />
+</div>
 
           <div className="divide-y divide-slate-100">
             {filtered.map((invoice) => (
               <div
                 key={invoice.id}
-                className="grid gap-3 p-5 md:grid-cols-[1.2fr_1.2fr_.8fr_.8fr_90px] md:items-center"
+                className="grid gap-3 p-5 md:grid-cols-[1.2fr_1.2fr_.8fr_.8fr_.8fr_90px] md:items-center"
               >
                 <Link href={`/invoices/${invoice.id}`} className="min-w-0">
                   <div className="font-black">{invoice.invoiceNumber}</div>
@@ -174,6 +175,10 @@ export default function InvoicesPage() {
                   <StatusBadge status={invoice.status} />
                 </div>
 
+                  <div className="text-sm font-black">
+  {formatCurrency(invoice.total)}
+</div>
+                
                 <div className="flex items-center justify-end gap-1">
                   <Link
                     href={`/invoices/${invoice.id}`}
