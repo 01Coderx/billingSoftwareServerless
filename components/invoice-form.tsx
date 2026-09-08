@@ -88,6 +88,13 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerOpen, setCustomerOpen] = useState(false);
 
+  const [addCustomerOpen, setAddCustomerOpen] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [newCustomerEmail, setNewCustomerEmail] = useState("");
+  const [newCustomerAddress, setNewCustomerAddress] = useState("");
+  const [newCustomerSaving, setNewCustomerSaving] = useState(false);
+
   const [productQuery, setProductQuery] = useState("");
   const [productOpen, setProductOpen] = useState(false);
 
