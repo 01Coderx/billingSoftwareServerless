@@ -103,17 +103,19 @@ export default function InvoicesPage() {
         <section className="card overflow-hidden">
           <div className="flex flex-col gap-3 border-b border-slate-100 p-5 md:flex-row md:items-center">
             <div className="relative min-w-0 flex-1">
-              <Search
-                size={17}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                className="input pl-10"
-                placeholder="Search bill, customer or status"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
+  <Search
+    size={17}
+    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+  />
+
+  <input
+    type="text"
+    className="input w-full pl-10"
+    placeholder="Search bill, customer or status"
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+  />
+</div>
 
             {/* Add Date Filter Input Here */}
             <input
