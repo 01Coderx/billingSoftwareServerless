@@ -91,6 +91,12 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
   const [productQuery, setProductQuery] = useState("");
   const [productOpen, setProductOpen] = useState(false);
 
+  const [addProductOpen, setAddProductOpen] = useState(false);
+  const [newProductName, setNewProductName] = useState("");
+  const [newProductRate, setNewProductRate] = useState("");
+  const [newProductSku, setNewProductSku] = useState("");
+  const [newProductSaving, setNewProductSaving] = useState(false);
+
   const [dueDate, setDueDate] = useState(toDateInput(initialInvoice?.dueDate));
   const [status, setStatus] = useState(initialInvoice?.status || "SENT");
   const [tax, setTax] = useState(Math.max(0, safeNumber(initialInvoice?.tax)));
@@ -220,6 +226,58 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
     setProductOpen(false);
     setError("");
   }
+
+  async function saveNewProduct() {
+  const name = newProductName.trim();
+  const sku = newProductSku.trim();
+  const price = Number(newProductRate);
+
+  if (!name) {
+    setError("Product name is required.");
+    return;
+  }
+
+  if (!Number.isFinite(price) || price < 0) {
+    setError("Please enter a valid rate.");
+    return;
+  }
+
+  setNewProductSaving(true);
+  setError("");
+
+  try {
+    const product = await api.products.create({
+      name,
+      sku,
+      price,
+      stock: 0,
+      description: "",
+      taxable: true,
+    });
+
+    // Add newly created product to the product list
+    setProducts((current) => [product, ...current]);
+
+    // Automatically add it to the current bill
+    addProduct(product);
+
+    // Close dialog
+    setAddProductOpen(false);
+
+    // Reset form
+    setNewProductName("");
+    setNewProductRate("");
+    setNewProductSku("");
+    setProductQuery("");
+    setProductOpen(false);
+  } catch (e) {
+    setError(
+      e instanceof Error ? e.message : "Could not create product",
+    );
+  } finally {
+    setNewProductSaving(false);
+  }
+}
 
   function changeQty(id: number, delta: number) {
     setLines((current) =>
@@ -507,10 +565,28 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
                 )}
 
                 {productOpen && productQuery && filteredProducts.length === 0 && (
-                  <div className="absolute left-0 right-0 top-full z-30 mt-1 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-500 shadow-xl">
-                    No products found.
-                  </div>
-                )}
+  <div className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+    <div className="p-3 text-sm text-slate-500">
+      No products found.
+    </div>
+
+    <button
+      type="button"
+      className="flex w-full items-center gap-2 border-t border-slate-100 px-3 py-3 text-left text-sm font-bold text-blue-600 hover:bg-blue-50"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={() => {
+        setNewProductName(productQuery.trim());
+        setNewProductRate("");
+        setNewProductSku("");
+        setProductOpen(false);
+        setAddProductOpen(true);
+      }}
+    >
+      <span className="text-lg">+</span>
+      Add "{productQuery.trim()}"
+    </button>
+  </div>
+)}
               </div>
             </div>
 
@@ -695,6 +771,77 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
           </p>
         </aside>
       </form>
+      {addProductOpen && (
+  <div className="fixed inset-0 z-[100] grid place-items-center bg-black/40 p-4">
+    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+      <div className="mb-5">
+        <h2 className="text-lg font-black">Add New Product</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Add the product without leaving the bill.
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <label className="block text-sm font-bold">
+          Product Name
+          <input
+            className="input mt-1.5 w-full"
+            value={newProductName}
+            onChange={(e) => setNewProductName(e.target.value)}
+            placeholder="Enter product name"
+            autoFocus
+          />
+        </label>
+
+        <label className="block text-sm font-bold">
+          Rate
+          <input
+            className="input mt-1.5 w-full"
+            type="number"
+            min="0"
+            step="0.01"
+            value={newProductRate}
+            onChange={(e) => setNewProductRate(e.target.value)}
+            placeholder="Enter selling rate"
+          />
+        </label>
+
+        <label className="block text-sm font-bold">
+          SKU
+          <input
+            className="input mt-1.5 w-full"
+            value={newProductSku}
+            onChange={(e) => setNewProductSku(e.target.value)}
+            placeholder="Optional SKU"
+          />
+        </label>
+      </div>
+
+      <div className="mt-6 flex justify-end gap-3">
+        <button
+          type="button"
+          className="btn btn-ghost"
+          disabled={newProductSaving}
+          onClick={() => {
+            setAddProductOpen(false);
+            setError("");
+          }}
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={newProductSaving}
+          onClick={saveNewProduct}
+        >
+          {newProductSaving ? "Saving..." : "Save Product"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
