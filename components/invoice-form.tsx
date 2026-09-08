@@ -205,6 +205,53 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
     setCustomerQuery("");
   }
 
+  async function saveNewCustomer() {
+  const name = newCustomerName.trim();
+  const phone = newCustomerPhone.trim();
+  const email = newCustomerEmail.trim();
+  const address = newCustomerAddress.trim();
+
+  if (!name) {
+    setError("Customer name is required.");
+    return;
+  }
+
+  setNewCustomerSaving(true);
+  setError("");
+
+  try {
+    const customer = await api.customers.create({
+      name,
+      phone,
+      email,
+      address,
+    });
+
+    // Add newly created customer to customer list
+    setCustomers((current) => [customer, ...current]);
+
+    // Automatically select the new customer for this bill
+    setCustomerId(String(customer.id));
+    setCustomerQuery(getCustomerLabel(customer));
+
+    // Close dialog
+    setAddCustomerOpen(false);
+
+    // Reset form
+    setNewCustomerName("");
+    setNewCustomerPhone("");
+    setNewCustomerEmail("");
+    setNewCustomerAddress("");
+    setCustomerOpen(false);
+  } catch (e) {
+    setError(
+      e instanceof Error ? e.message : "Could not create customer",
+    );
+  } finally {
+    setNewCustomerSaving(false);
+  }
+}
+
   function addProduct(product: Product) {
     if (!product?.id) return;
 
@@ -478,6 +525,31 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
                     ))}
                   </div>
                 )}
+
+                {customerOpen && customerQuery && filteredCustomers.length === 0 && (
+  <div className="absolute left-0 right-0 z-30 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+    <div className="p-3 text-sm text-slate-500">
+      No customers found.
+    </div>
+
+    <button
+      type="button"
+      className="flex w-full items-center gap-2 border-t border-slate-100 px-3 py-3 text-left text-sm font-bold text-blue-600 hover:bg-blue-50"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={() => {
+        setNewCustomerName(customerQuery.trim());
+        setNewCustomerPhone("");
+        setNewCustomerEmail("");
+        setNewCustomerAddress("");
+        setCustomerOpen(false);
+        setAddCustomerOpen(true);
+      }}
+    >
+      <span className="text-lg">+</span>
+      Add "{customerQuery.trim()}"
+    </button>
+  </div>
+)}
 
                 {customerQuery && customerId && (
                   <button
@@ -778,6 +850,88 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
           </p>
         </aside>
       </form>
+
+        {addCustomerOpen && (
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-5">
+              <h2 className="text-lg font-black">Add New Customer</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Add the customer without leaving the bill.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <label className="block text-sm font-bold">
+                Customer Name
+                <input
+                  className="input mt-1.5 w-full"
+                  value={newCustomerName}
+                  onChange={(e) => setNewCustomerName(e.target.value)}
+                  placeholder="Enter customer name"
+                  autoFocus
+                />
+              </label>
+
+              <label className="block text-sm font-bold">
+                Phone
+                <input
+                  className="input mt-1.5 w-full"
+                  value={newCustomerPhone}
+                  onChange={(e) => setNewCustomerPhone(e.target.value)}
+                  placeholder="Enter phone number"
+                />
+              </label>
+
+              <label className="block text-sm font-bold">
+                Email
+                <input
+                  className="input mt-1.5 w-full"
+                  type="email"
+                  value={newCustomerEmail}
+                  onChange={(e) => setNewCustomerEmail(e.target.value)}
+                  placeholder="Optional email"
+                />
+              </label>
+
+              <label className="block text-sm font-bold">
+                Address
+                <textarea
+                  className="input mt-1.5 w-full"
+                  rows={3}
+                  value={newCustomerAddress}
+                  onChange={(e) => setNewCustomerAddress(e.target.value)}
+                  placeholder="Optional address"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={newCustomerSaving}
+                onClick={() => {
+                  setAddCustomerOpen(false);
+                  setError("");
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={newCustomerSaving}
+                onClick={saveNewCustomer}
+              >
+                {newCustomerSaving ? "Saving..." : "Save Customer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {addProductOpen && (
   <div className="fixed inset-0 z-[100] grid place-items-center bg-black/40 p-4">
     <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
