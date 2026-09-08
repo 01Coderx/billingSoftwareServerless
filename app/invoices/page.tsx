@@ -104,7 +104,7 @@ export default function InvoicesPage() {
           <div className="flex flex-col gap-3 border-b border-slate-100 p-5 md:flex-row md:items-center">
 
   {/* SEARCH INPUT */}
-  <div className="relative min-w-0 flex-1">
+  <div className="relative min-w-0 flex-1 md:min-w-[300px]">
     <Search
       size={17}
       className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -120,14 +120,15 @@ export default function InvoicesPage() {
   </div>
 
   {/* DATE INPUT — SEPARATE */}
+  <div className="w-full shrink-0 md:w-[180px]">
   <input
     type="date"
-    className="input w-full md:w-[180px]"
+    className="input w-full"
     value={dateFilter}
     onChange={(e) => setDateFilter(e.target.value)}
     aria-label="Filter bills by date"
   />
-
+</div>
   {dateFilter && (
     <button
       type="button"
