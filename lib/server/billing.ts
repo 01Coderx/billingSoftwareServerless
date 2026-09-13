@@ -1,34 +1,90 @@
-import crypto from "node:crypto";
+
 import { Customer, Product, Invoice, Counter } from "./models";
 
 const money = (value: unknown) => Math.round((Number(value) || 0) * 100) / 100;
 
-async function nextSequence(name: string) {
+async function nextSequence(
+  name: "customer" | "product" | "invoice"
+) {
+  const Model =
+    name === "customer"
+      ? Customer
+      : name === "product"
+        ? Product
+        : Invoice;
+
+  // Find the highest ID already present in the collection.
+  // This automatically fixes an old/stale/missing Counter document.
+  const highest = await Model.findOne({})
+    .sort({ id: -1 })
+    .select({ id: 1 })
+    .lean<any>();
+
+  const currentMax = Number(highest?.id || 0);
+
+  // Atomically move the counter forward.
   const counter = await Counter.findOneAndUpdate(
+    {
+      _id: name,
+      seq: { $lt: currentMax },
+    },
+    {
+      $set: { seq: currentMax },
+    },
+    {
+      new: true,
+    }
+  ).lean<any>();
+
+  // If counter didn't exist or was already >= currentMax,
+  // increment it normally.
+  if (!counter) {
+    const result = await Counter.findOneAndUpdate(
+      { _id: name },
+      { $inc: { seq: 1 } },
+      {
+        new: true,
+        upsert: true,
+        setDefaultsOnInsert: true,
+      }
+    ).lean<any>();
+
+    if (!result) {
+      throw new Error("Could not generate sequence");
+    }
+
+    return Number(result.seq);
+  }
+
+  // The counter was just synced to currentMax.
+  // Increment once to get the next serial number.
+  const result = await Counter.findOneAndUpdate(
     { _id: name },
     { $inc: { seq: 1 } },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
+    { new: true }
   ).lean<any>();
-   if (!counter) {
+
+  if (!result) {
     throw new Error("Could not generate sequence");
   }
-  return Number(counter.seq);
+
+  return Number(result.seq);
 }
 
 export async function listProducts() { return Product.find().sort({ id: -1 }).lean(); }
 export async function getProduct(id: string | number) { return Product.findOne({ id: Number(id) }).lean(); }
 
 export async function createProduct(data: any) {
-  let id = 0;
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const candidate = crypto.randomInt(100000, 999999);
-    if (!(await Product.exists({ id: candidate }))) { id = candidate; break; }
-  }
-  if (!id) throw new Error("Could not generate a unique product ID");
   const product = await Product.create({
-    id, sku: data.sku || "", name: data.name, description: data.description || "",
-    price: Number(data.price || 0), stock: Number(data.stock || 0), taxable: data.taxable !== false,
+    id: await nextSequence("product"),
+    sku: data.sku || "",
+    name: data.name,
+    description: data.description || "",
+    price: Number(data.price || 0),
+    stock: Number(data.stock || 0),
+    taxable: data.taxable !== false,
   });
+
   return product.toObject();
 }
 
@@ -50,9 +106,13 @@ export async function getCustomer(id: string | number) { return Customer.findOne
 
 export async function createCustomer(data: any) {
   const customer = await Customer.create({
-    id: await nextSequence("customer"), name: data.name, email: data.email || "",
-    phone: data.phone || "", address: data.address || "",
+    id: await nextSequence("customer"),
+    name: data.name,
+    email: data.email || "",
+    phone: data.phone || "",
+    address: data.address || "",
   });
+
   return customer.toObject();
 }
 
@@ -118,19 +178,9 @@ async function buildInvoice(input: any, existing: any = null) {
   let id = existing?.id;
 
 if (!id) {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const candidate = crypto.randomInt(100000, 999999);
-
-    if (!(await Invoice.exists({ id: candidate }))) {
-      id = candidate;
-      break;
-    }
-  }
-
-  if (!id) {
-    throw new Error("Could not generate a unique invoice ID");
-  }
+  id = await nextSequence("invoice");
 }
+  
   return {
     id,
     invoiceNumber: existing?.invoiceNumber || `INV-${String(id).padStart(6, "0")}`,
