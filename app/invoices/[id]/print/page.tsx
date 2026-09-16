@@ -32,10 +32,18 @@ export default function PrintInvoicePage() {
   }, [id]);
 
   useEffect(() => {
-    if (!invoice) return;
-    const timer = window.setTimeout(() => window.print(), 500);
-    return () => window.clearTimeout(timer);
-  }, [invoice]);
+  if (!invoice) return;
+
+  const timer = window.setTimeout(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.print();
+      });
+    });
+  }, 300);
+
+  return () => window.clearTimeout(timer);
+}, [invoice]);
 
   if (error) return <main className="p-8 font-sans text-red-600">{error}</main>;
   if (!invoice) return <main className="p-8 font-sans text-slate-500">Preparing bill…</main>;
