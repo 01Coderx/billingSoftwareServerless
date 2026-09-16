@@ -1,4 +1,8 @@
-
+import {
+  getCacheSafe,
+  setCacheSafe,
+  invalidateCacheSafe,
+} from "@/lib/redis";
 import { Customer, Product, Invoice, Counter } from "./models";
 
 const money = (value: unknown) => Math.round((Number(value) || 0) * 100) / 100;
@@ -71,8 +75,43 @@ async function nextSequence(
   return Number(result.seq);
 }
 
-export async function listProducts() { return Product.find().sort({ id: -1 }).lean(); }
-export async function getProduct(id: string | number) { return Product.findOne({ id: Number(id) }).lean(); }
+export async function listProducts() {
+  const cacheKey = "cache:products:all";
+
+  const cachedProducts = await getCacheSafe<any[]>(cacheKey);
+
+  if (cachedProducts !== null) {
+    return cachedProducts;
+  }
+
+  const products = await Product.find()
+    .sort({ id: -1 })
+    .lean();
+
+  await setCacheSafe(cacheKey, products, 300);
+
+  return products;
+}
+
+export async function getProduct(id: string | number) {
+  const cacheKey = `cache:products:${Number(id)}`;
+
+  const cachedProduct = await getCacheSafe<any>(cacheKey);
+
+  if (cachedProduct !== null) {
+    return cachedProduct;
+  }
+
+  const product = await Product.findOne({
+    id: Number(id),
+  }).lean();
+
+  if (product) {
+    await setCacheSafe(cacheKey, product, 300);
+  }
+
+  return product;
+}
 
 export async function createProduct(data: any) {
   const product = await Product.create({
@@ -85,6 +124,8 @@ export async function createProduct(data: any) {
     taxable: data.taxable !== false,
   });
 
+  await invalidateCacheSafe("cache:products:all");
+  
   return product.toObject();
 }
 
@@ -97,9 +138,28 @@ export async function updateProduct(id: string | number, data: any) {
     ...(data.stock !== undefined && { stock: Number(data.stock) }),
     ...(data.taxable !== undefined && { taxable: Boolean(data.taxable) }),
   }}, { new: true, runValidators: true }).lean();
+
+   if (product) {
+    await invalidateCacheSafe("cache:products:all");
+    await invalidateCacheSafe(`cache:products:${Number(id)}`);
+  }
+
+  return product;
+  
 }
 
-export async function removeProduct(id: string | number) { return Product.deleteOne({ id: Number(id) }); }
+export async function removeProduct(id: string | number) {
+  const result = await Product.deleteOne({
+    id: Number(id),
+  });
+
+  if (result.deletedCount) {
+    await invalidateCacheSafe("cache:products:all");
+    await invalidateCacheSafe(`cache:products:${Number(id)}`);
+  }
+
+  return result;
+}
 
 export async function listCustomers() { return Customer.find().sort({ id: -1 }).lean(); }
 export async function getCustomer(id: string | number) { return Customer.findOne({ id: Number(id) }).lean(); }
