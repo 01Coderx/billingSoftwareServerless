@@ -130,22 +130,38 @@ export async function createProduct(data: any) {
 }
 
 export async function updateProduct(id: string | number, data: any) {
-  return Product.findOneAndUpdate({ id: Number(id) }, { $set: {
-    ...(data.sku !== undefined && { sku: data.sku }),
-    ...(data.name !== undefined && { name: data.name }),
-    ...(data.description !== undefined && { description: data.description }),
-    ...(data.price !== undefined && { price: Number(data.price) }),
-    ...(data.stock !== undefined && { stock: Number(data.stock) }),
-    ...(data.taxable !== undefined && { taxable: Boolean(data.taxable) }),
-  }}, { new: true, runValidators: true }).lean();
+  const product = await Product.findOneAndUpdate(
+    { id: Number(id) },
+    {
+      $set: {
+        ...(data.sku !== undefined && { sku: data.sku }),
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.description !== undefined && {
+          description: data.description,
+        }),
+        ...(data.price !== undefined && {
+          price: Number(data.price),
+        }),
+        ...(data.stock !== undefined && {
+          stock: Number(data.stock),
+        }),
+        ...(data.taxable !== undefined && {
+          taxable: Boolean(data.taxable),
+        }),
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).lean();
 
-   if (product) {
+  if (product) {
     await invalidateCacheSafe("cache:products:all");
     await invalidateCacheSafe(`cache:products:${Number(id)}`);
   }
 
   return product;
-  
 }
 
 export async function removeProduct(id: string | number) {
