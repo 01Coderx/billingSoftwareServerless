@@ -54,7 +54,6 @@ export default function PrintInvoicePage() {
     <>
       <style jsx global>{`
         @page {
-          size: 100mm 148mm;
           margin: 0;
         }
 
@@ -67,18 +66,23 @@ export default function PrintInvoicePage() {
         * {
           box-sizing: border-box;
         }
+@media print {
+  html,
+  body {
+    width: 100%;
+    height: auto;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
 
-        .print-bill {
-          width: 100mm;
-          min-height: 148mm;
-          padding: 9mm 7mm;
-          margin: 0 auto;
-          color: #111827;
-          background: white;
-          font-family: Arial, Helvetica, sans-serif;
-          font-size: 9px;
-          line-height: 1.3;
-        }
+  .print-bill {
+    width: 100%;
+    min-height: 0;
+    margin: 0 !important;
+    padding: 9mm 7mm;
+    box-shadow: none;
+  }
+}
 
         .title {
           text-align: center;
