@@ -77,8 +77,8 @@ useEffect(() => {
 
   html,
   body {
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
     background: white;
   }
 
@@ -89,8 +89,9 @@ useEffect(() => {
   .print-bill {
     width: 100mm;
     min-height: 148mm;
-    padding: 3mm 3.5mm;
+    height: 148mm;
     margin: 0 auto;
+    padding: 3mm 3.5mm;
     color: #111;
     background: white;
     font-family: Arial, Helvetica, sans-serif;
@@ -107,9 +108,9 @@ useEffect(() => {
     justify-content: space-between;
     align-items: center;
     gap: 5px;
+    margin-bottom: 2px;
     font-size: 7px;
     line-height: 1.1;
-    margin-bottom: 2px;
   }
 
   .customer {
@@ -127,7 +128,7 @@ useEffect(() => {
 
   th,
   td {
-    border: 0.35px solid #444;
+    border: 0.4px solid #444;
     padding: 2px 2px;
     vertical-align: middle;
     line-height: 1.1;
@@ -206,17 +207,18 @@ useEffect(() => {
     font-size: 6px;
   }
 
-  .no-print {
-    margin-bottom: 10px;
-  }
-
   @media screen {
     body {
       background: #e5e7eb;
     }
 
     .print-bill {
+      width: 100mm;
+      height: 148mm;
+      min-height: 148mm;
       margin: 10px auto;
+      padding: 3mm 3.5mm;
+      background: white;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18);
     }
   }
@@ -228,22 +230,24 @@ useEffect(() => {
 
     html,
     body {
-      width: 100mm;
-      height: 148mm;
+      width: 100mm !important;
+      height: 148mm !important;
       margin: 0 !important;
       padding: 0 !important;
       background: white !important;
     }
 
     .print-bill {
-      width: 100mm;
-      min-height: 148mm;
+      width: 100mm !important;
+      height: 148mm !important;
+      min-height: 148mm !important;
       margin: 0 !important;
-      padding: 3mm 3.5mm;
+      padding: 3mm 3.5mm !important;
       box-shadow: none !important;
     }
   }
 `}</style>
+      
       {/* Manual print button to bypass browser auto-print blocks */}
       <div className="no-print p-4 flex justify-center gap-4 bg-slate-100 border-b">
         <button
@@ -255,7 +259,7 @@ useEffect(() => {
       </div>
 
       <main className="print-bill">
-        <div className="title">BILL / RECEIPT</div>
+        <div className="title">BILL</div>
 
         <div className="meta">
           <strong>Invoice: {invoice.invoiceNumber}</strong>
