@@ -35,6 +35,12 @@ function Sidebar({ close }: { close?: () => void }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+
+   if (pathname.endsWith("/print")) {
+    return <>{children}</>;
+  }
+  
   return <div className="min-h-screen bg-[var(--background)]"><div className="fixed inset-y-0 left-0 z-40 hidden lg:block"><Sidebar /></div>{open && <div className="fixed inset-0 z-50 bg-slate-950/40 lg:hidden" onClick={() => setOpen(false)}><div className="h-full w-[275px]" onClick={(e) => e.stopPropagation()}><Sidebar close={() => setOpen(false)}/></div></div>}
     <div className="lg:pl-[260px]"><header className="sticky top-0 z-30 border-b border-[var(--border)] bg-white/90 backdrop-blur"><div className="flex h-20 items-center gap-3 px-4 sm:px-6 lg:px-8"><button className="btn btn-ghost lg:hidden" onClick={() => setOpen(true)}><Menu size={21}/></button><div className="min-w-0 flex-1"><div className="text-lg font-black tracking-tight">Billing workspace</div><div className="hidden text-xs text-slate-500 sm:block">Manage sales, products, customers and invoices</div></div><div className="flex items-center gap-3"><div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 sm:flex"><div className="size-2 rounded-full bg-emerald-500"/><span className="text-xs font-bold text-slate-600">API ready</span></div><div className="grid size-10 place-items-center rounded-full bg-slate-900 text-sm font-black text-white">{initials("BillFlow")}</div></div></div></header><main className="p-4 sm:p-6 lg:p-8">{children}</main></div>
   </div>
