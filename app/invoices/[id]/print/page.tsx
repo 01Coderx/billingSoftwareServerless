@@ -32,9 +32,6 @@ export default function PrintInvoicePage() {
   }, [id]);
 
 
-  return () => window.clearTimeout(timer);
-}, [invoice]);
-
   if (error) return <main className="p-8 font-sans text-red-600">{error}</main>;
   if (!invoice) return <main className="p-8 font-sans text-slate-500">Preparing bill…</main>;
 
