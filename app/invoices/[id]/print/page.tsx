@@ -1,24 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
 import type { Invoice } from "@/types/billing";
 
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | void> {
-  return Promise.race([
-    promise,
-    new Promise<void>((resolve) => setTimeout(resolve, ms)),
-  ]);
-}
-
 function money(value: number | null | undefined) {
-  return `₹${Number(value || 0).toFixed(2)}`;
+  return Number(value || 0).toFixed(2);
 }
 
 function date(value?: string | null) {
   if (!value) return "-";
-  return new Intl.DateTimeFormat("en-IN", {
+
+  return new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     month: "2-digit",
     year: "2-digit",
@@ -28,299 +22,352 @@ function date(value?: string | null) {
 export default function PrintInvoicePage() {
   const params = useParams<{ id: string }>();
   const id = Number(params?.id);
+
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [error, setError] = useState("");
-  const [printing, setPrinting] = useState(false);
-  const hasAutoPrinted = useRef(false);
-
-  const doPrint = async () => {
-  if (printing) return;
-  setPrinting(true);
-
-  if (typeof document !== "undefined" && document.fonts) {
-    await withTimeout(document.fonts.ready, 1500);
-  }
-  await new Promise((resolve) => setTimeout(resolve, 250));
-
-  window.print();
-  setPrinting(false);
-};
-
-useEffect(() => {
-  if (!invoice || hasAutoPrinted.current) return;
-  hasAutoPrinted.current = true;
-  doPrint();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [invoice]);
 
   useEffect(() => {
     if (!Number.isFinite(id)) return;
+
     api.invoices
       .get(id)
       .then(setInvoice)
-      .catch((e) => setError(e instanceof Error ? e.message : "Could not load invoice"));
+      .catch((e) =>
+        setError(
+          e instanceof Error
+            ? e.message
+            : "Could not load invoice"
+        )
+      );
   }, [id]);
 
+  const printBill = () => {
+    window.print();
+  };
 
-  if (error) return <main className="p-8 font-sans text-red-600">{error}</main>;
-  if (!invoice) return <main className="p-8 font-sans text-slate-500">Preparing bill…</main>;
+  if (error) {
+    return (
+      <main className="p-8 font-sans text-red-600">
+        {error}
+      </main>
+    );
+  }
 
-  const customer = invoice.customer?.name || "Walk-in Customer";
+  if (!invoice) {
+    return (
+      <main className="p-8 font-sans text-slate-500">
+        Preparing bill…
+      </main>
+    );
+  }
+
+  const customer =
+    invoice.customer?.name || "Walk-in Customer";
+
+  const phone = invoice.customer?.phone || "";
 
   return (
     <>
-     <style jsx global>{`
-  @page {
-    size: 100mm 148mm;
-    margin: 0;
-  }
+      <style jsx global>{`
+        @page {
+          size: 100mm 148mm;
+          margin: 0;
+        }
 
-  html,
-  body {
-    margin: 0 !important;
-    padding: 0 !important;
-    background: white;
-  }
+        html,
+        body {
+          margin: 0 !important;
+          padding: 0 !important;
+          background: white !important;
+        }
 
-  * {
-    box-sizing: border-box;
-  }
+        * {
+          box-sizing: border-box;
+        }
 
-  .print-bill {
-    width: 100mm;
-    min-height: 148mm;
-    height: 148mm;
-    margin: 0 auto;
-    padding: 3mm 3.5mm;
-    color: #111;
-    background: white;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 7px;
-    line-height: 1.15;
-  }
+        .print-actions {
+          display: flex;
+          justify-content: center;
+          padding: 12px;
+          background: #f1f5f9;
+        }
 
-  .title {
-    display: none;
-  }
+        .print-actions button {
+          border: 0;
+          border-radius: 6px;
+          padding: 9px 18px;
+          background: #2563eb;
+          color: white;
+          font-weight: 700;
+          cursor: pointer;
+        }
 
-  .meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 5px;
-    margin-bottom: 2px;
-    font-size: 7px;
-    line-height: 1.1;
-  }
+        .bill-page {
+          width: 100mm;
+          height: 148mm;
+          min-height: 148mm;
+          margin: 0 auto;
+          padding: 9pt 10pt;
+          background: white;
+          color: #111;
+          font-family: Arial, Helvetica, sans-serif;
+          overflow: hidden;
+        }
 
-  .customer {
-    margin: 2px 0 4px;
-    font-size: 8px;
-    line-height: 1.15;
-    font-weight: 800;
-  }
+        .invoice-line {
+          width: 100%;
+          font-size: 7pt;
+          font-weight: 700;
+          line-height: 1;
+        }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-  }
+        .date-line {
+          width: 100%;
+          margin-top: 1pt;
+          font-size: 5.8pt;
+          line-height: 1;
+          text-align: right;
+          font-weight: 400;
+        }
 
-  th,
-  td {
-    border: 0.4px solid #444;
-    padding: 2px 2px;
-    vertical-align: middle;
-    line-height: 1.1;
-    overflow-wrap: break-word;
-  }
+        .customer-line {
+          margin-top: 3pt;
+          margin-bottom: 3pt;
+          font-size: 8pt;
+          line-height: 1.05;
+          font-weight: 700;
+          white-space: nowrap;
+        }
 
-  th {
-    font-size: 7px !important;
-    font-weight: 900;
-    text-transform: uppercase;
-  }
+        .customer-name {
+          font-size: 9pt;
+          font-weight: 700;
+        }
 
-  td {
-    font-size: 7px !important;
-    font-weight: 600;
-  }
+        .customer-phone {
+          font-size: 7pt;
+          font-weight: 400;
+        }
 
-  th:nth-child(1),
-  td:nth-child(1) {
-    width: 7%;
-  }
+        .bill-table {
+          width: 100%;
+          table-layout: fixed;
+          border-collapse: collapse;
+          border-spacing: 0;
+        }
 
-  th:nth-child(2),
-  td:nth-child(2) {
-    width: 34%;
-  }
+        .bill-table th,
+        .bill-table td {
+          width: auto;
+          height: 15pt;
+          padding: 0 2pt;
+          border: 1px solid #111;
+          vertical-align: middle;
+          line-height: 1;
+          overflow: hidden;
+          white-space: nowrap;
+        }
 
-  th:nth-child(3),
-  td:nth-child(3) {
-    width: 19%;
-  }
+        .bill-table th {
+          font-size: 7.5pt;
+          font-weight: 700;
+        }
 
-  th:nth-child(4),
-  td:nth-child(4) {
-    width: 12%;
-  }
+        .bill-table td {
+          font-size: 7pt;
+          font-weight: 400;
+        }
 
-  th:nth-child(5),
-  td:nth-child(5) {
-    width: 28%;
-  }
+        .bill-table th:nth-child(1),
+        .bill-table td:nth-child(1) {
+          width: 13pt;
+          text-align: right;
+        }
 
-  .right {
-    text-align: right;
-  }
+        .bill-table th:nth-child(2),
+        .bill-table td:nth-child(2) {
+          width: 65pt;
+          text-align: left;
+        }
 
-  .center {
-    text-align: center;
-  }
+        .bill-table th:nth-child(3),
+        .bill-table td:nth-child(3) {
+          width: 35pt;
+          text-align: right;
+        }
 
-  .totals {
-    margin-top: 3px;
-    margin-left: auto;
-    width: 55%;
-    font-size: 7px;
-  }
+        .bill-table th:nth-child(4),
+        .bill-table td:nth-child(4) {
+          width: 25pt;
+          text-align: right;
+        }
 
-  .total-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 1px 0;
-  }
+        .bill-table th:nth-child(5),
+        .bill-table td:nth-child(5) {
+          text-align: right;
+        }
 
-  .grand {
-    border-top: 0.5px solid #111;
-    margin-top: 1px;
-    padding-top: 1px;
-    font-size: 8px;
-    font-weight: 900;
-  }
+        .summary {
+          width: 100%;
+          margin-top: 5pt;
+          text-align: right;
+          font-size: 7pt;
+          line-height: 1.15;
+        }
 
-  .footer {
-    margin-top: auto;
-    padding-top: 3px;
-    text-align: center;
-    font-size: 6px;
-  }
+        .summary-row {
+          margin-bottom: 4pt;
+        }
 
-  @media screen {
-    body {
-      background: #e5e7eb;
-    }
+        .summary-total {
+          font-size: 8.5pt;
+          font-weight: 700;
+        }
 
-    .print-bill {
-      width: 100mm;
-      height: 148mm;
-      min-height: 148mm;
-      margin: 10px auto;
-      padding: 3mm 3.5mm;
-      background: white;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18);
-    }
-  }
+        .footer {
+          position: absolute;
+          top: 126mm;
+          width: 92.6mm;
+          text-align: center;
+          font-size: 5.8pt;
+          font-weight: 400;
+        }
 
-  @media print {
-    .no-print {
-      display: none !important;
-    }
+        @media screen {
+          body {
+            background: #e5e7eb !important;
+          }
 
-    html,
-    body {
-      width: 100mm !important;
-      height: 148mm !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      background: white !important;
-    }
+          .bill-page {
+            margin: 20px auto;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+          }
+        }
 
-    .print-bill {
-      width: 100mm !important;
-      height: 148mm !important;
-      min-height: 148mm !important;
-      margin: 0 !important;
-      padding: 3mm 3.5mm !important;
-      box-shadow: none !important;
-    }
-  }
-`}</style>
-      
-      {/* Manual print button to bypass browser auto-print blocks */}
-      <div className="no-print p-4 flex justify-center gap-4 bg-slate-100 border-b">
-        <button
-          onClick={() => window.print()}
-          className="px-4 py-2 bg-blue-600 text-white rounded font-medium shadow hover:bg-blue-700 transition"
-        >
-          Print Invoice
+        @media print {
+          .print-actions {
+            display: none !important;
+          }
+
+          html,
+          body {
+            width: 100mm !important;
+            height: 148mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            background: white !important;
+          }
+
+          .bill-page {
+            width: 100mm !important;
+            height: 148mm !important;
+            min-height: 148mm !important;
+            margin: 0 !important;
+            padding: 9pt 10pt !important;
+            box-shadow: none !important;
+          }
+        }
+      `}</style>
+
+      <div className="print-actions">
+        <button onClick={printBill}>
+          Print Bill
         </button>
       </div>
 
-      <main className="print-bill">
-        <div className="title">BILL</div>
-
-        <div className="meta">
-          <strong>Invoice: {invoice.invoiceNumber}</strong>
-          <span>Date: {date(invoice.createdAt)}</span>
+      <main className="bill-page">
+        <div className="invoice-line">
+          Invoice: {invoice.invoiceNumber}
         </div>
 
-        <div className="customer">
-          Customer: {customer}
-          {invoice.customer?.phone ? ` | ${invoice.customer.phone}` : ""}
+        <div className="date-line">
+          Date: {date(invoice.createdAt)}
         </div>
 
-        <table>
+        <div className="customer-line">
+          Customer:{" "}
+          <span className="customer-name">
+            {customer}
+          </span>
+
+          {phone && (
+            <span className="customer-phone">
+              {"  |  "}
+              {phone}
+            </span>
+          )}
+        </div>
+
+        <table className="bill-table">
+          <colgroup>
+            <col style={{ width: "13pt" }} />
+            <col style={{ width: "65pt" }} />
+            <col style={{ width: "35pt" }} />
+            <col style={{ width: "25pt" }} />
+            <col />
+          </colgroup>
+
           <thead>
             <tr>
-              <th className="center">#</th>
-              <th>Item</th>
-              <th className="right">Rate</th>
-              <th className="right">Qty</th>
-              <th className="right">Amount</th>
+              <th>#</th>
+              <th>ITEM</th>
+              <th>RATE</th>
+              <th>QTY</th>
+              <th>AMOUNT</th>
             </tr>
           </thead>
+
           <tbody>
             {(invoice.items || []).map((item, index) => (
-              <tr key={item.id ?? `${item.product?.id}-${index}`}>
-                <td className="center">{index + 1}</td>
-                <td>{item.product?.name || "Item"}</td>
-                <td className="right">{money(item.rate)}</td>
-                <td className="right">{item.quantity}</td>
-                <td className="right">{money(item.amount)}</td>
+              <tr
+                key={
+                  item.id ??
+                  `${item.product?.id}-${index}`
+                }
+              >
+                <td>{index + 1}</td>
+
+                <td title={item.product?.name || "Item"}>
+                  {item.product?.name || "Item"}
+                </td>
+
+                <td>{money(item.rate)}</td>
+
+                <td>{item.quantity}</td>
+
+                <td>{money(item.amount)}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        <div className="totals">
-          <div className="total-row">
-            <span>Subtotal</span>
-            <strong>{money(invoice.subtotal)}</strong>
+        <div className="summary">
+          <div className="summary-row">
+            Subtotal&nbsp;&nbsp;{money(invoice.subtotal)}
           </div>
 
           {Number(invoice.tax || 0) !== 0 && (
-            <div className="total-row">
-              <span>Tax</span>
-              <strong>{money(invoice.tax)}</strong>
+            <div className="summary-row">
+              Tax&nbsp;&nbsp;{money(invoice.tax)}
             </div>
           )}
 
           {Number(invoice.discount || 0) !== 0 && (
-            <div className="total-row">
-              <span>Discount</span>
-              <strong>-{money(invoice.discount)}</strong>
+            <div className="summary-row">
+              Discount&nbsp;&nbsp;-
+              {money(invoice.discount)}
             </div>
           )}
 
-          <div className="total-row grand">
-            <span>TOTAL</span>
-            <strong>{money(invoice.total)}</strong>
+          <div className="summary-total">
+            TOTAL&nbsp;&nbsp;{money(invoice.total)}
           </div>
         </div>
 
-        <div className="footer">Thank you for your business.</div>
+        <div className="footer">
+          Thank you for your business.
+        </div>
       </main>
     </>
   );
