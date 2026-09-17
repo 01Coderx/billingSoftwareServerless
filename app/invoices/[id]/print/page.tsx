@@ -20,17 +20,28 @@ function date(value?: string | null) {
 
 export default function PrintInvoicePage() {
   const params = useParams<{ id: string }>();
-  const id = Number(params.id);
+  const id = Number(params?.id);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!Number.isFinite(id)) return;
-    api.invoices.get(id)
+    api.invoices
+      .get(id)
       .then(setInvoice)
       .catch((e) => setError(e instanceof Error ? e.message : "Could not load invoice"));
   }, [id]);
 
+  useEffect(() => {
+    if (!invoice) return;
+
+    // Trigger auto-print safely after DOM paint
+    const timer = setTimeout(() => {
+      window.print();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [invoice]);
 
   if (error) return <main className="p-8 font-sans text-red-600">{error}</main>;
   if (!invoice) return <main className="p-8 font-sans text-slate-500">Preparing bill…</main>;
@@ -44,7 +55,8 @@ export default function PrintInvoicePage() {
           margin: 0;
         }
 
-        html, body {
+        html,
+        body {
           margin: 0;
           padding: 0;
           background: white;
@@ -53,28 +65,6 @@ export default function PrintInvoicePage() {
         * {
           box-sizing: border-box;
         }
-@media print {
-
-.no-print {
-  display: none !important;
-}
-
-  html,
-  body {
-    width: 100%;
-    height: auto;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  .print-bill {
-    width: 100%;
-    min-height: 0;
-    margin: 0 !important;
-    padding: 9mm 7mm;
-    box-shadow: none;
-  }
-}
 
         .title {
           text-align: center;
@@ -102,45 +92,33 @@ export default function PrintInvoicePage() {
         }
 
         th,
-td {
-  border: 0.4px solid #555;
-  padding: 5px 4px;
-  vertical-align: middle;
-}
+        td {
+          border: 0.4px solid #555;
+          padding: 5px 4px;
+          vertical-align: middle;
+        }
 
-th {
-  font-size: 14px !important;
-  line-height: 1.2;
-  text-transform: uppercase;
-  font-weight: 900;
-}
+        th {
+          font-size: 14px !important;
+          line-height: 1.2;
+          text-transform: uppercase;
+          font-weight: 900;
+        }
 
-td {
-  font-size: 13px !important;
-  line-height: 1.25;
-  font-weight: 700;
-}
+        td {
+          font-size: 13px !important;
+          line-height: 1.25;
+          font-weight: 700;
+        }
 
         th:nth-child(1),
-td:nth-child(1) {
-  width: 9%;
-}
-
-th:nth-child(2),
-td:nth-child(2) {
-  width: 43%;
-}
-
-th:nth-child(3),
-td:nth-child(3) {
-  width: 18%;
-}
-
-th:nth-child(4),
-td:nth-child(4) {
-  width: 30%;
-}
-
+        td:nth-child(1) { width: 9%; }
+        th:nth-child(2),
+        td:nth-child(2) { width: 43%; }
+        th:nth-child(3),
+        td:nth-child(3) { width: 18%; }
+        th:nth-child(4),
+        td:nth-child(4) { width: 30%; }
 
         .right { text-align: right; }
         .center { text-align: center; }
@@ -175,17 +153,44 @@ td:nth-child(4) {
           body { background: #e5e7eb; }
           .print-bill {
             margin: 24px auto;
-            box-shadow: 0 8px 35px rgba(0,0,0,.16);
+            max-width: 800px;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 8px 35px rgba(0, 0, 0, 0.16);
           }
         }
 
         @media print {
+          .no-print {
+            display: none !important;
+          }
+          html,
+          body {
+            width: 100%;
+            height: auto;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
           .print-bill {
-            margin: 0;
+            width: 100%;
+            min-height: 0;
+            margin: 0 !important;
+            padding: 9mm 7mm;
             box-shadow: none;
           }
         }
       `}</style>
+
+      {/* Manual print button to bypass browser auto-print blocks */}
+      <div className="no-print p-4 flex justify-center gap-4 bg-slate-100 border-b">
+        <button
+          onClick={() => window.print()}
+          className="px-4 py-2 bg-blue-600 text-white rounded font-medium shadow hover:bg-blue-700 transition"
+        >
+          Print Invoice
+        </button>
+      </div>
 
       <main className="print-bill">
         <div className="title">BILL / RECEIPT</div>
