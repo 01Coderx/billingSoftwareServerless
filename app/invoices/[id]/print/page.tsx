@@ -54,6 +54,11 @@ export default function PrintInvoicePage() {
           box-sizing: border-box;
         }
 @media print {
+
+.no-print {
+  display: none !important;
+}
+
   html,
   body {
     width: 100%;
