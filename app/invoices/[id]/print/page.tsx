@@ -32,16 +32,39 @@ export default function PrintInvoicePage() {
       .catch((e) => setError(e instanceof Error ? e.message : "Could not load invoice"));
   }, [id]);
 
-  useEffect(() => {
-    if (!invoice) return;
+  
+  
+ useEffect(() => {
+  if (!invoice) return;
 
-    // Trigger auto-print safely after DOM paint
-    const timer = setTimeout(() => {
+  let cancelled = false;
+
+  const printWhenReady = async () => {
+    // Wait for fonts to finish loading
+    if (document.fonts) {
+      await document.fonts.ready;
+    }
+
+    // Wait for browser to render the invoice
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
+    });
+
+    if (!cancelled) {
       window.print();
-    }, 500);
+    }
+  };
 
-    return () => clearTimeout(timer);
-  }, [invoice]);
+  printWhenReady();
+
+  return () => {
+    cancelled = true;
+  };
+}, [invoice]);
 
   if (error) return <main className="p-8 font-sans text-red-600">{error}</main>;
   if (!invoice) return <main className="p-8 font-sans text-slate-500">Preparing bill…</main>;
