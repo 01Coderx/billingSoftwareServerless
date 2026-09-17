@@ -31,16 +31,6 @@ export default function PrintInvoicePage() {
       .catch((e) => setError(e instanceof Error ? e.message : "Could not load invoice"));
   }, [id]);
 
-  useEffect(() => {
-  if (!invoice) return;
-
-  const timer = window.setTimeout(() => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        window.print();
-      });
-    });
-  }, 300);
 
   return () => window.clearTimeout(timer);
 }, [invoice]);
