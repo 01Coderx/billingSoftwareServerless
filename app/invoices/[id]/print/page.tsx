@@ -69,138 +69,181 @@ useEffect(() => {
 
   return (
     <>
-      <style jsx global>{`
-        @page {
-          margin: 0;
-        }
+     <style jsx global>{`
+  @page {
+    size: 100mm 148mm;
+    margin: 0;
+  }
 
-        html,
-        body {
-          margin: 0;
-          padding: 0;
-          background: white;
-        }
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
 
-        * {
-          box-sizing: border-box;
-        }
+  * {
+    box-sizing: border-box;
+  }
 
-        .title {
-          text-align: center;
-          font-size: 16px;
-          font-weight: 900;
-          margin-bottom: 3px;
-        }
+  .print-bill {
+    width: 100mm;
+    min-height: 148mm;
+    padding: 3mm 3.5mm;
+    margin: 0 auto;
+    color: #111;
+    background: white;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 7px;
+    line-height: 1.15;
+  }
 
-        .meta {
-          display: flex;
-          justify-content: space-between;
-          gap: 8px;
-          font-size: 8px;
-        }
+  .title {
+    display: none;
+  }
 
-        .customer {
-          margin: 8px 0;
-          font-size: 12px;
-          font-weight: 800;
-        }
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 5px;
+    font-size: 7px;
+    line-height: 1.1;
+    margin-bottom: 2px;
+  }
 
-        table {
-          width: 100%;
-          border-collapse: collapse;
-        }
+  .customer {
+    margin: 2px 0 4px;
+    font-size: 8px;
+    line-height: 1.15;
+    font-weight: 800;
+  }
 
-        th,
-        td {
-          border: 0.4px solid #555;
-          padding: 5px 4px;
-          vertical-align: middle;
-        }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
 
-        th {
-          font-size: 14px !important;
-          line-height: 1.2;
-          text-transform: uppercase;
-          font-weight: 900;
-        }
+  th,
+  td {
+    border: 0.35px solid #444;
+    padding: 2px 2px;
+    vertical-align: middle;
+    line-height: 1.1;
+    overflow-wrap: break-word;
+  }
 
-        td {
-          font-size: 13px !important;
-          line-height: 1.25;
-          font-weight: 700;
-        }
+  th {
+    font-size: 7px !important;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
 
-        th:nth-child(1),
-        td:nth-child(1) { width: 9%; }
-        th:nth-child(2),
-        td:nth-child(2) { width: 43%; }
-        th:nth-child(3),
-        td:nth-child(3) { width: 18%; }
-        th:nth-child(4),
-        td:nth-child(4) { width: 30%; }
+  td {
+    font-size: 7px !important;
+    font-weight: 600;
+  }
 
-        .right { text-align: right; }
-        .center { text-align: center; }
+  th:nth-child(1),
+  td:nth-child(1) {
+    width: 7%;
+  }
 
-        .totals {
-          margin-top: 7px;
-          margin-left: auto;
-          width: 62%;
-        }
+  th:nth-child(2),
+  td:nth-child(2) {
+    width: 34%;
+  }
 
-        .total-row {
-          display: flex;
-          justify-content: space-between;
-          padding: 2px 0;
-        }
+  th:nth-child(3),
+  td:nth-child(3) {
+    width: 19%;
+  }
 
-        .grand {
-          border-top: 0.7px solid #111827;
-          margin-top: 2px;
-          padding-top: 4px;
-          font-size: 14px;
-          font-weight: 900;
-        }
+  th:nth-child(4),
+  td:nth-child(4) {
+    width: 12%;
+  }
 
-        .footer {
-          margin-top: 9px;
-          text-align: center;
-          font-size: 7.5px;
-        }
+  th:nth-child(5),
+  td:nth-child(5) {
+    width: 28%;
+  }
 
-        @media screen {
-          body { background: #e5e7eb; }
-          .print-bill {
-            margin: 24px auto;
-            max-width: 800px;
-            background: white;
-            padding: 20px;
-            box-shadow: 0 8px 35px rgba(0, 0, 0, 0.16);
-          }
-        }
+  .right {
+    text-align: right;
+  }
 
-        @media print {
-          .no-print {
-            display: none !important;
-          }
-          html,
-          body {
-            width: 100%;
-            height: auto;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
+  .center {
+    text-align: center;
+  }
 
-          .print-bill {
-            width: 100%;
-            min-height: 0;
-            margin: 0 !important;
-            padding: 9mm 7mm;
-            box-shadow: none;
-          }
-        }
-      `}</style>
+  .totals {
+    margin-top: 3px;
+    margin-left: auto;
+    width: 55%;
+    font-size: 7px;
+  }
 
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1px 0;
+  }
+
+  .grand {
+    border-top: 0.5px solid #111;
+    margin-top: 1px;
+    padding-top: 1px;
+    font-size: 8px;
+    font-weight: 900;
+  }
+
+  .footer {
+    margin-top: auto;
+    padding-top: 3px;
+    text-align: center;
+    font-size: 6px;
+  }
+
+  .no-print {
+    margin-bottom: 10px;
+  }
+
+  @media screen {
+    body {
+      background: #e5e7eb;
+    }
+
+    .print-bill {
+      margin: 10px auto;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18);
+    }
+  }
+
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+
+    html,
+    body {
+      width: 100mm;
+      height: 148mm;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: white !important;
+    }
+
+    .print-bill {
+      width: 100mm;
+      min-height: 148mm;
+      margin: 0 !important;
+      padding: 3mm 3.5mm;
+      box-shadow: none !important;
+    }
+  }
+`}</style>
       {/* Manual print button to bypass browser auto-print blocks */}
       <div className="no-print p-4 flex justify-center gap-4 bg-slate-100 border-b">
         <button
@@ -275,11 +318,6 @@ useEffect(() => {
 
         <div className="footer">Thank you for your business.</div>
       </main>
-      <div className="print-actions">
-  <button onClick={doPrint} disabled={printing}>
-    {printing ? "Opening print…" : "Print bill"}
-  </button>
-</div>
     </>
   );
 }
