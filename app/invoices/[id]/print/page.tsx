@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
 import type { Invoice } from "@/types/billing";
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | void> {
+  return Promise.race([
+    promise,
+    new Promise<void>((resolve) => setTimeout(resolve, ms)),
+  ]);
+}
 
 function money(value: number | null | undefined) {
   return `₹${Number(value || 0).toFixed(2)}`;
@@ -23,6 +30,28 @@ export default function PrintInvoicePage() {
   const id = Number(params?.id);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [error, setError] = useState("");
+  const [printing, setPrinting] = useState(false);
+  const hasAutoPrinted = useRef(false);
+
+  const doPrint = async () => {
+  if (printing) return;
+  setPrinting(true);
+
+  if (typeof document !== "undefined" && document.fonts) {
+    await withTimeout(document.fonts.ready, 1500);
+  }
+  await new Promise((resolve) => setTimeout(resolve, 250));
+
+  window.print();
+  setPrinting(false);
+};
+
+useEffect(() => {
+  if (!invoice || hasAutoPrinted.current) return;
+  hasAutoPrinted.current = true;
+  doPrint();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [invoice]);
 
   useEffect(() => {
     if (!Number.isFinite(id)) return;
@@ -32,39 +61,6 @@ export default function PrintInvoicePage() {
       .catch((e) => setError(e instanceof Error ? e.message : "Could not load invoice"));
   }, [id]);
 
-  
-  
- useEffect(() => {
-  if (!invoice) return;
-
-  let cancelled = false;
-
-  const printWhenReady = async () => {
-    // Wait for fonts to finish loading
-    if (document.fonts) {
-      await document.fonts.ready;
-    }
-
-    // Wait for browser to render the invoice
-    await new Promise<void>((resolve) => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          resolve();
-        });
-      });
-    });
-
-    if (!cancelled) {
-      window.print();
-    }
-  };
-
-  printWhenReady();
-
-  return () => {
-    cancelled = true;
-  };
-}, [invoice]);
 
   if (error) return <main className="p-8 font-sans text-red-600">{error}</main>;
   if (!invoice) return <main className="p-8 font-sans text-slate-500">Preparing bill…</main>;
@@ -279,6 +275,11 @@ export default function PrintInvoicePage() {
 
         <div className="footer">Thank you for your business.</div>
       </main>
+      <div className="print-actions">
+  <button onClick={doPrint} disabled={printing}>
+    {printing ? "Opening print…" : "Print bill"}
+  </button>
+</div>
     </>
   );
 }
