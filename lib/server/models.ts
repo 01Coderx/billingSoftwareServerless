@@ -6,6 +6,7 @@ const productSchema = new Schema({
   name: { type: String, required: true, trim: true },
   description: { type: String, default: "" },
   price: { type: Number, required: true, min: 0, default: 0 },
+  costPrice: { type: Number, required: true, min: 0, default: 0 },
   stock: { type: Number, required: true, min: 0, default: 0 },
   taxable: { type: Boolean, default: true },
 }, { timestamps: true, versionKey: false });
@@ -27,6 +28,7 @@ const invoiceItemSchema = new Schema({
     name: { type: String, required: true },
   },
   rate: { type: Number, required: true, min: 0, default: 0 },
+  costPrice: { type: Number, required: true, min: 0, default: 0 },
   quantity: { type: Number, required: true, min: 0.01, default: 1 },
   amount: { type: Number, required: true, min: 0, default: 0 },
 }, { _id: false });
@@ -49,9 +51,46 @@ const invoiceSchema = new Schema({
   tax: { type: Number, required: true, min: 0, default: 0 },
   discount: { type: Number, required: true, min: 0, default: 0 },
   total: { type: Number, required: true, min: 0, default: 0 },
+  amountPaid: { type: Number, min: 0, default: 0 },
+  amountDue: { type: Number, min: 0, default: 0 },
+  paymentStatus: {
+    type: String,
+    enum: ["UNPAID", "PARTIAL", "PAID"],
+    default: "UNPAID",
+    index: true,
+  },
   status: { type: String, default: "PAID" },
+  inventoryAdjusted: { type: Boolean, default: false },
   items: { type: [invoiceItemSchema], default: [] },
 }, { versionKey: false });
+
+const paymentLedgerSchema = new Schema({
+  id: { type: Number, unique: true, index: true, required: true },
+  invoiceId: { type: Number, required: true, index: true },
+  invoiceNumber: { type: String, required: true },
+  customerId: { type: Number, default: null, index: true },
+  customerName: { type: String, default: "" },
+  amount: { type: Number, required: true, min: 0.01 },
+  paymentMode: {
+    type: String,
+    enum: ["CASH", "UPI", "BANK_TRANSFER"],
+    required: true,
+  },
+  paymentDate: { type: Date, default: Date.now },
+  referenceNumber: { type: String, default: "" },
+  notes: { type: String, default: "" },
+}, { timestamps: true, versionKey: false });
+
+const businessSettingsSchema = new Schema({
+  key: { type: String, unique: true, default: "default" },
+  businessName: { type: String, default: "" },
+  phone: { type: String, default: "" },
+  address: { type: String, default: "" },
+  upiId: { type: String, default: "" },
+  accountHolderName: { type: String, default: "" },
+  bankAccountNumber: { type: String, default: "" },
+  ifsc: { type: String, default: "" },
+}, { timestamps: true, versionKey: false });
 
 const counterSchema = new Schema({
   _id: { type: String, required: true },
@@ -61,4 +100,6 @@ const counterSchema = new Schema({
 export const Product = (mongoose.models.Product as Model<any>) || mongoose.model("Product", productSchema);
 export const Customer = (mongoose.models.Customer as Model<any>) || mongoose.model("Customer", customerSchema);
 export const Invoice = (mongoose.models.Invoice as Model<any>) || mongoose.model("Invoice", invoiceSchema);
+export const PaymentLedger = (mongoose.models.PaymentLedger as Model<any>) || mongoose.model("PaymentLedger", paymentLedgerSchema);
+export const BusinessSettings = (mongoose.models.BusinessSettings as Model<any>) || mongoose.model("BusinessSettings", businessSettingsSchema);
 export const Counter = (mongoose.models.Counter as Model<any>) || mongoose.model("Counter", counterSchema);

@@ -1,5 +1,5 @@
 import { connectDB } from "@/lib/server/db";
-import { getInvoice } from "@/lib/server/billing";
+import { getInvoice, getSettings } from "@/lib/server/billing";
 import { generateInvoicePdf } from "@/lib/server/pdf";
 import { jsonError } from "@/lib/server/api-error";
 
@@ -12,7 +12,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     await connectDB();
     const invoice = await getInvoice(id);
     if (!invoice) return Response.json({ message: `Invoice not found: ${id}` }, { status: 404 });
-    const pdf = await generateInvoicePdf(invoice);
+    const settings = await getSettings();
+    const pdf = await generateInvoicePdf(invoice, settings);
     return new Response(new Uint8Array(pdf), {
       status: 200,
       headers: {

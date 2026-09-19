@@ -19,19 +19,24 @@ function date(value?: string | null) {
   }).format(new Date(value));
 }
 
+function qrUrl(upiId: string, name: string, amount: number, invoiceNumber: string) {
+  const p = new URLSearchParams({ pa: upiId, pn: name, am: Number(amount).toFixed(2), cu: "INR", tn: `Payment for ${invoiceNumber}` });
+  return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=4&data=${encodeURIComponent(`upi://pay?${p.toString()}`)}`;
+}
+
 export default function PrintInvoicePage() {
   const params = useParams<{ id: string }>();
   const id = Number(params?.id);
 
   const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [settings, setSettings] = useState<any>({});
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!Number.isFinite(id)) return;
 
-    api.invoices
-      .get(id)
-      .then(setInvoice)
+    Promise.all([api.invoices.get(id), api.settings.get()])
+      .then(([item, business]) => { setInvoice(item); setSettings(business || {}); })
       .catch((e) =>
         setError(
           e instanceof Error
@@ -65,6 +70,8 @@ export default function PrintInvoicePage() {
     invoice.customer?.name || "Walk-in Customer";
 
   const phone = invoice.customer?.phone || "";
+  const due = Number((invoice as any).amountDue || 0);
+  const qr = settings?.upiId && due > 0 ? qrUrl(settings.upiId, settings.businessName || "Merchant", due, invoice.invoiceNumber) : "";
 
   return (
     <>
@@ -103,6 +110,7 @@ export default function PrintInvoicePage() {
         }
 
         .bill-page {
+          position: relative;
           width: 100mm;
           height: 148mm;
           min-height: 148mm;
@@ -366,8 +374,15 @@ export default function PrintInvoicePage() {
         </div>
 
         <div className="footer">
-          Thank you for your business.
+          {settings?.phone ? `${settings.phone} · ` : ""}Thank you for your business.
         </div>
+
+        {qr && (
+          <div style={{ position: "absolute", right: "10pt", bottom: "10pt", textAlign: "center" }}>
+            <img src={qr} alt="UPI payment QR" style={{ width: "25mm", height: "25mm" }} />
+            <div style={{ fontSize: "5.5pt" }}>Scan to pay {money(due)}</div>
+          </div>
+        )}
       </main>
     </>
   );

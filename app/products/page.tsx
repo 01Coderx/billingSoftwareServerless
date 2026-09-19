@@ -99,6 +99,7 @@ export default function ProductsPage() {
         name: form.name,
         description: form.description || "",
         price: Number(form.price),
+        costPrice: Number(form.costPrice),
         stock: Number(form.stock),
         taxable: Boolean(form.taxable),
       };

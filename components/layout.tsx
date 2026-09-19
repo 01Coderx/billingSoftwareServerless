@@ -10,6 +10,7 @@ const nav = [
   { href: "/invoices", label: "Invoices", icon: FileText },
   { href: "/products", label: "Products", icon: Boxes },
   { href: "/customers", label: "Customers", icon: Users },
+  { href: "/settings", label: "Settings", icon: Settings2 },
 ];
 
 function Sidebar({ close }: { close?: () => void }) {
@@ -24,7 +25,6 @@ function Sidebar({ close }: { close?: () => void }) {
       <div className="mb-2 px-3 text-[11px] font-bold uppercase tracking-[.16em] text-slate-500">Workspace</div>
       <nav className="space-y-1">{nav.map((item) => { const Icon = item.icon; const active = pathname === item.href || pathname.startsWith(item.href + "/"); return <Link key={item.href} href={item.href} onClick={close} className={cn("flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition", active ? "bg-white/10 text-white" : "text-slate-400 hover:bg-white/5 hover:text-white")}><Icon size={18}/>{item.label}{item.label === "Invoices" && <span className="ml-auto rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] text-blue-300">Core</span>}</Link>})}</nav>
       <div className="mt-8 mb-2 px-3 text-[11px] font-bold uppercase tracking-[.16em] text-slate-500">System</div>
-      <Link href="#" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-500"><Settings2 size={18}/>Settings</Link>
       <Link href="#" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-500"><BarChart3 size={18}/>Reports <span className="ml-auto text-[10px]">Soon</span></Link>
     </div>
     <div className="m-4 rounded-2xl border border-white/10 bg-white/[.04] p-4">

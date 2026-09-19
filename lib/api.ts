@@ -49,6 +49,7 @@ export const api = {
     getAll: () => request<Customer[]>("/api/customers"),
     get: (id: string | number) => request<Customer>(`/api/customers/${id}`),
     getById: (id: string | number) => request<Customer>(`/api/customers/${id}`),
+    ledger: (id: string | number) => request<any>(`/api/customers/${id}/ledger`),
     create: (data: Partial<Customer>) =>
       request<Customer>("/api/customers", {
         method: "POST",
@@ -84,6 +85,21 @@ export const api = {
       request<void>(`/api/products/${id}`, { method: "DELETE" }),
     delete: (id: string | number) =>
       request<void>(`/api/products/${id}`, { method: "DELETE" }),
+  },
+
+  payments: {
+    create: (data: { invoiceId: number; amount: number; paymentMode: "CASH" | "UPI" | "BANK_TRANSFER"; paymentDate?: string; referenceNumber?: string; notes?: string }) =>
+      request<Invoice>("/api/payments", { method: "POST", body: JSON.stringify(data) }),
+    invoiceHistory: (id: string | number) => request<any[]>(`/api/payments/invoice/${id}`),
+  },
+
+  dashboard: {
+    analytics: () => request<any>("/api/dashboard/analytics"),
+  },
+
+  settings: {
+    get: () => request<any>("/api/settings"),
+    update: (data: any) => request<any>("/api/settings", { method: "PUT", body: JSON.stringify(data) }),
   },
 
   invoices: {

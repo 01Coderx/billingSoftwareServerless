@@ -392,6 +392,17 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
       return;
     }
 
+    for (const line of lines) {
+      if (mode === "create" && Number(line.quantity) > Number(line.product.stock)) {
+        setError(`${getProductLabel(line.product)} has only ${line.product.stock} in stock.`);
+        return;
+      }
+      if (Number(line.quantity) <= 0) {
+        setError(`Quantity for ${getProductLabel(line.product)} must be greater than zero.`);
+        return;
+      }
+    }
+
     const payload: InvoiceDraft = {
       dueDate: dueDate ? new Date(`${dueDate}T00:00:00`).toISOString() : null,
       customer: customerId ? { id: Number(customerId) } : null,

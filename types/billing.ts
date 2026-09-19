@@ -4,6 +4,7 @@ export type Product = {
   name: string;
   description?: string;
   price: number;
+  costPrice: number;
   stock: number;
   taxable?: boolean;
 };
@@ -20,6 +21,7 @@ export type InvoiceItem = {
   id?: number;
   product: Product;
   rate: number;
+  costPrice?: number;
   quantity: number;
   amount: number;
 };
@@ -34,6 +36,9 @@ export type Invoice = {
   tax: number;
   discount: number;
   total: number;
+  amountPaid: number;
+  amountDue: number;
+  paymentStatus: "UNPAID" | "PARTIAL" | "PAID";
   status: "DRAFT" | "SENT" | "PAID" | "CANCELLED" | string;
   items: InvoiceItem[];
 };
@@ -41,6 +46,7 @@ export type Invoice = {
 export type InvoiceItemDraft = {
   productId: number;
   rate: number;
+  costPrice?: number;
   quantity: number;
 };
 
