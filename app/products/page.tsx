@@ -22,6 +22,7 @@ const empty: Product = {
   name: "",
   description: "",
   price: 0,
+  costPrice: 0,
   stock: 0,
   taxable: true,
 };
@@ -74,6 +75,7 @@ export default function ProductsPage() {
       name: product.name || "",
       description: product.description || "",
       price: Number(product.price || 0),
+      costPrice: product.costPrice,
       stock: Number(product.stock || 0),
       taxable: product.taxable !== false,
       id: product.id,
