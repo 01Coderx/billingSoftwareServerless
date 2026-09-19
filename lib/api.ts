@@ -97,6 +97,10 @@ export const api = {
     analytics: () => request<any>("/api/dashboard/analytics"),
   },
 
+  reports: {
+    analytics: () => request<any>("/api/reports"),
+  },
+
   settings: {
     get: () => request<any>("/api/settings"),
     update: (data: any) => request<any>("/api/settings", { method: "PUT", body: JSON.stringify(data) }),

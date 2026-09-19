@@ -322,6 +322,152 @@ export async function getDashboardAnalytics() {
   return { totals: { ...totals, outstanding: Number(outstanding[0]?.value || 0) }, currentMonth: { revenue: Number(cm.revenue || 0), cost: Number(cm.cost || 0), profit: Number(cm.revenue || 0) - Number(cm.cost || 0), units: Number(cm.units || 0) }, monthly: monthly.map((m: any) => ({ year: m._id.year, month: m._id.month, label: `${String(m._id.month).padStart(2, "0")}/${m._id.year}`, revenue: Number(m.revenue || 0), cost: Number(m.cost || 0), units: Number(m.units || 0), profit: Number(m.profit || 0) })) };
 }
 
+export async function getReportsAnalytics() {
+  const LOW_STOCK_THRESHOLD = 5;
+  const TARGET_STOCK = 10;
+  const baseMatch = { status: { $ne: "CANCELLED" } };
+
+  const [
+    productSummary,
+    topProducts,
+    monthlySales,
+    customerSummary,
+    topCustomers,
+    lowStockProducts,
+  ] = await Promise.all([
+    Product.aggregate([
+      { $group: {
+        _id: null,
+        products: { $sum: 1 },
+        unitsInStock: { $sum: "$stock" },
+        inventoryValue: { $sum: { $multiply: ["$stock", "$costPrice"] } },
+        lowStock: { $sum: { $cond: [{ $lte: ["$stock", LOW_STOCK_THRESHOLD] }, 1, 0] } },
+      } },
+    ]),
+    Invoice.aggregate([
+      { $match: baseMatch },
+      { $unwind: "$items" },
+      { $group: {
+        _id: "$items.product.id",
+        name: { $first: "$items.product.name" },
+        sku: { $first: "$items.product.sku" },
+        units: { $sum: "$items.quantity" },
+        sales: { $sum: "$items.amount" },
+        cost: { $sum: { $multiply: ["$items.costPrice", "$items.quantity"] } },
+      } },
+      { $addFields: { profit: { $subtract: ["$sales", "$cost"] } } },
+      { $sort: { sales: -1 } },
+      { $limit: 8 },
+    ]),
+    Invoice.aggregate([
+      { $match: baseMatch },
+      { $group: {
+        _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
+        sales: { $sum: "$total" },
+        invoices: { $sum: 1 },
+      } },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+      { $limit: 12 },
+    ]),
+    Invoice.aggregate([
+      { $match: { ...baseMatch, "customer.id": { $ne: null } } },
+      { $group: {
+        _id: "$customer.id",
+        name: { $first: "$customer.name" },
+        email: { $first: "$customer.email" },
+        phone: { $first: "$customer.phone" },
+        invoices: { $sum: 1 },
+        sales: { $sum: "$total" },
+        paid: { $sum: "$amountPaid" },
+        outstanding: { $sum: "$amountDue" },
+        lastPurchase: { $max: "$createdAt" },
+      } },
+      { $addFields: { recurring: { $gte: ["$invoices", 2] } } },
+      { $sort: { sales: -1 } },
+    ]),
+    Invoice.aggregate([
+      { $match: { ...baseMatch, "customer.id": { $ne: null } } },
+      { $group: {
+        _id: "$customer.id",
+        name: { $first: "$customer.name" },
+        invoices: { $sum: 1 },
+        sales: { $sum: "$total" },
+        outstanding: { $sum: "$amountDue" },
+      } },
+      { $sort: { sales: -1 } },
+      { $limit: 8 },
+    ]),
+    Product.find({ stock: { $lte: LOW_STOCK_THRESHOLD } })
+      .sort({ stock: 1, name: 1 })
+      .limit(10)
+      .select({ id: 1, name: 1, sku: 1, stock: 1, price: 1, costPrice: 1 })
+      .lean(),
+  ]);
+
+  const ps = productSummary[0] || {};
+  const customers = customerSummary.map((customer: any) => ({
+    id: Number(customer._id),
+    name: customer.name || "Unnamed customer",
+    email: customer.email || "",
+    phone: customer.phone || "",
+    invoices: Number(customer.invoices || 0),
+    sales: money(customer.sales),
+    paid: money(customer.paid),
+    outstanding: money(customer.outstanding),
+    recurring: Boolean(customer.recurring),
+    lastPurchase: customer.lastPurchase,
+  }));
+
+  return {
+    productAnalysis: {
+      products: Number(ps.products || 0),
+      unitsInStock: Number(ps.unitsInStock || 0),
+      inventoryValue: money(ps.inventoryValue),
+      lowStock: Number(ps.lowStock || 0),
+      lowStockThreshold: LOW_STOCK_THRESHOLD,
+      targetStock: TARGET_STOCK,
+    },
+    topProducts: topProducts.map((item: any) => ({
+      id: Number(item._id),
+      name: item.name || "Unknown product",
+      sku: item.sku || "",
+      units: Number(item.units || 0),
+      sales: money(item.sales),
+      cost: money(item.cost),
+      profit: money(item.profit),
+    })),
+    monthlySales: monthlySales.map((item: any) => ({
+      label: `${String(item._id.month).padStart(2, "0")}/${item._id.year}`,
+      sales: money(item.sales),
+      invoices: Number(item.invoices || 0),
+    })),
+    customerAnalysis: {
+      customers: customers.length,
+      recurringCustomers: customers.filter((customer: any) => customer.recurring).length,
+      oneTimeCustomers: customers.filter((customer: any) => !customer.recurring).length,
+      sales: money(customers.reduce((sum: number, customer: any) => sum + customer.sales, 0)),
+      outstanding: money(customers.reduce((sum: number, customer: any) => sum + customer.outstanding, 0)),
+    },
+    topCustomers: topCustomers.map((customer: any) => ({
+      id: Number(customer._id),
+      name: customer.name || "Unnamed customer",
+      invoices: Number(customer.invoices || 0),
+      sales: money(customer.sales),
+      outstanding: money(customer.outstanding),
+    })),
+    recurringCustomers: customers.filter((customer: any) => customer.recurring).sort((a: any, b: any) => b.sales - a.sales).slice(0, 8),
+    lowStockProducts: lowStockProducts.map((product: any) => ({
+      id: Number(product.id),
+      name: product.name,
+      sku: product.sku || "",
+      stock: Number(product.stock || 0),
+      required: Math.max(0, TARGET_STOCK - Number(product.stock || 0)),
+      price: money(product.price),
+      costPrice: money(product.costPrice),
+    })),
+  };
+}
+
 export async function getSettings() { return BusinessSettings.findOne({ key: "default" }).lean(); }
 export async function updateSettings(data: any) {
   return BusinessSettings.findOneAndUpdate({ key: "default" }, { $set: {
