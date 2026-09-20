@@ -1,11 +1,27 @@
 import mongoose, { ClientSession } from "mongoose";
-import { getCacheSafe, setCacheSafe, invalidateCacheSafe } from "@/lib/redis";
-import { Customer, Product, Invoice, PaymentLedger, BusinessSettings, Counter } from "./models";
+import { getCacheSafe, setCacheSafe, invalidateCacheSafe } from "@/lib/redis";import {
+  Customer,
+  Product,
+  Invoice,
+  PaymentLedger,
+  BusinessSettings,
+  Counter,
+  StockEntry,
+} from "./models";
 
 const money = (value: unknown) => Math.round((Number(value) || 0) * 100) / 100;
 
-async function nextSequence(name: "customer" | "product" | "invoice" | "payment", session?: ClientSession) {
-  const Model = name === "customer" ? Customer : name === "product" ? Product : name === "invoice" ? Invoice : PaymentLedger;
+async function nextSequence(name: "customer" | "product" | "invoice" | "payment" | "stockEntry", session?: ClientSession) {
+const Model =
+  name === "customer"
+    ? Customer
+    : name === "product"
+      ? Product
+      : name === "invoice"
+        ? Invoice
+        : name === "payment"
+          ? PaymentLedger
+          : StockEntry;
   const highestQuery = Model.findOne({}).sort({ id: -1 }).select({ id: 1 });
   if (session) highestQuery.session(session);
   const highest = await highestQuery.lean<any>();
@@ -80,6 +96,147 @@ export async function removeProduct(id: string | number) {
   const result = await Product.deleteOne({ id: Number(id) });
   if (result.deletedCount) { await invalidateCacheSafe("cache:products:all"); await invalidateCacheSafe(`cache:products:${Number(id)}`); }
   return result;
+}
+
+export async function listStockEntries() {
+  return StockEntry.find()
+    .sort({ id: -1 })
+    .lean();
+}
+
+
+export async function getStockEntry(id: string | number) {
+  return StockEntry.findOne({
+    id: Number(id),
+  }).lean();
+}
+
+
+export async function createStockEntry(input: any) {
+  if (!input || !Array.isArray(input.items) || !input.items.length) {
+    throw new Error("Stock entry items are required");
+  }
+
+  const session = await mongoose.startSession();
+
+  try {
+    let created: any = null;
+
+    await session.withTransaction(async () => {
+      const items: any[] = [];
+      let totalAmount = 0;
+
+      for (const raw of input.items) {
+        const productId = Number(raw.productId);
+
+        if (!Number.isFinite(productId)) {
+          throw new Error("Every stock item must have a valid product");
+        }
+
+        const quantity = Number(raw.quantity);
+        const purchaseRate = Number(raw.purchaseRate);
+
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+          throw new Error("Stock quantity must be greater than zero");
+        }
+
+        if (!Number.isFinite(purchaseRate) || purchaseRate < 0) {
+          throw new Error("Purchase rate must be zero or greater");
+        }
+
+        const product = await Product.findOne({
+          id: productId,
+        })
+          .session(session)
+          .lean<any>();
+
+        if (!product) {
+          throw new Error(`Product not found: ${productId}`);
+        }
+
+        const amount = money(quantity * purchaseRate);
+
+        items.push({
+          productId: product.id,
+          productName: product.name,
+          sku: product.sku || "",
+          quantity,
+          purchaseRate: money(purchaseRate),
+          amount,
+        });
+
+        totalAmount = money(totalAmount + amount);
+
+        /*
+         * IMPORTANT:
+         *
+         * stock increases here
+         * costPrice becomes latest purchase cost
+         *
+         * selling price is NOT changed.
+         */
+        const updated = await Product.findOneAndUpdate(
+          { id: productId },
+          {
+            $inc: {
+              stock: quantity,
+            },
+            $set: {
+              costPrice: money(purchaseRate),
+            },
+          },
+          {
+            new: true,
+            session,
+          },
+        ).lean();
+
+        if (!updated) {
+          throw new Error(
+            `Could not update stock for ${product.name}`,
+          );
+        }
+      }
+
+      const stockEntryId = await nextSequence(
+        "stockEntry",
+        session,
+      );
+
+      const docs = await StockEntry.create(
+        [
+          {
+            id: stockEntryId,
+            supplierName: input.supplierName || "",
+            supplierInvoiceNo:
+              input.supplierInvoiceNo || "",
+            entryDate: input.entryDate
+              ? new Date(input.entryDate)
+              : new Date(),
+            sourceImageData:
+              input.sourceImageData || "",
+            totalAmount,
+            items,
+          },
+        ],
+        { session },
+      );
+
+      created = docs[0].toObject();
+    });
+
+    await invalidateCacheSafe("cache:products:all");
+
+    for (const item of created?.items || []) {
+      await invalidateCacheSafe(
+        `cache:products:${Number(item.productId)}`,
+      );
+    }
+
+    return created;
+  } finally {
+    await session.endSession();
+  }
 }
 
 export async function listCustomers() { return Customer.find().sort({ id: -1 }).lean(); }
