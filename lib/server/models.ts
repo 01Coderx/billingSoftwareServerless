@@ -64,6 +64,95 @@ const invoiceSchema = new Schema({
   items: { type: [invoiceItemSchema], default: [] },
 }, { versionKey: false });
 
+const stockEntryItemSchema = new Schema({
+  productId: {
+    type: Number,
+    required: true,
+  },
+
+  productName: {
+    type: String,
+    required: true,
+  },
+
+  sku: {
+    type: String,
+    default: "",
+  },
+
+  quantity: {
+    type: Number,
+    required: true,
+    min: 0.01,
+  },
+
+  purchaseRate: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+
+  amount: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+}, { _id: false });
+
+
+const stockEntrySchema = new Schema({
+  id: {
+    type: Number,
+    unique: true,
+    index: true,
+    required: true,
+  },
+
+  supplierName: {
+    type: String,
+    default: "",
+    trim: true,
+  },
+
+  supplierInvoiceNo: {
+    type: String,
+    default: "",
+    trim: true,
+  },
+
+  entryDate: {
+    type: Date,
+    default: Date.now,
+  },
+
+  /*
+   * Small compressed bill image.
+   * The frontend should resize/compress before sending.
+   */
+  sourceImageData: {
+    type: String,
+    default: "",
+  },
+
+  totalAmount: {
+    type: Number,
+    min: 0,
+    default: 0,
+  },
+
+  items: {
+    type: [stockEntryItemSchema],
+    default: [],
+  },
+
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+}, {
+  versionKey: false,
+});
+
 const paymentLedgerSchema = new Schema({
   id: { type: Number, unique: true, index: true, required: true },
   invoiceId: { type: Number, required: true, index: true },
@@ -102,4 +191,11 @@ export const Customer = (mongoose.models.Customer as Model<any>) || mongoose.mod
 export const Invoice = (mongoose.models.Invoice as Model<any>) || mongoose.model("Invoice", invoiceSchema);
 export const PaymentLedger = (mongoose.models.PaymentLedger as Model<any>) || mongoose.model("PaymentLedger", paymentLedgerSchema);
 export const BusinessSettings = (mongoose.models.BusinessSettings as Model<any>) || mongoose.model("BusinessSettings", businessSettingsSchema);
-export const Counter = (mongoose.models.Counter as Model<any>) || mongoose.model("Counter", counterSchema);
+export const Counter =
+  (mongoose.models.Counter as Model<any>) ||
+  mongoose.model("Counter", counterSchema);
+
+export const StockEntry =
+  (mongoose.models.StockEntry as Model<any>) ||
+  mongoose.model("StockEntry", stockEntrySchema);
+
