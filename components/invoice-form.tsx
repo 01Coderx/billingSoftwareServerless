@@ -699,13 +699,17 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
     {line.product.name}
   </div>
   <div className="mt-0.5 whitespace-normal text-xs leading-relaxed text-slate-500">
-    {line.product.sku || "No SKU"} · Catalogue price {formatCurrency(line.product.price)}
+    {line.product.sku || "No SKU"}
+{" · "}
+Purchase {formatCurrency(line.product.costPrice)}
+{" · "}
+Default sale {formatCurrency(line.product.price)}
   </div>
 </div>
                     </div>
 
                     <label className="text-xs font-bold text-slate-500">
-                      Rate
+                      Selling Rate
                       <input
                         className="input mt-1"
                         type="number"
