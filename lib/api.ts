@@ -1,4 +1,11 @@
-import type { Customer, Invoice, InvoiceDraft, Product } from "@/types/billing";
+import type {
+  Customer,
+  Invoice,
+  InvoiceDraft,
+  Product,
+  StockEntry,
+  StockEntryDraft,
+} from "@/types/billing";
 
 const API_BASE_URL = "";
 
@@ -65,6 +72,17 @@ export const api = {
     delete: (id: string | number) =>
       request<void>(`/api/customers/${id}`, { method: "DELETE" }),
   },
+
+  stockIn: {
+  list: () =>
+    request<StockEntry[]>("/api/stock-in"),
+
+  create: (data: StockEntryDraft) =>
+    request<StockEntry>("/api/stock-in", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+},
 
   products: {
     list: () => request<Product[]>("/api/products"),
