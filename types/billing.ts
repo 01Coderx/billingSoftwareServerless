@@ -9,6 +9,38 @@ export type Product = {
   taxable?: boolean;
 };
 
+export type StockEntryItem = {
+  productId: number;
+  productName: string;
+  sku?: string;
+  quantity: number;
+  purchaseRate: number;
+  amount: number;
+};
+
+export type StockEntry = {
+  id: number;
+  supplierName: string;
+  supplierInvoiceNo: string;
+  entryDate: string;
+  sourceImageData?: string;
+  totalAmount: number;
+  items: StockEntryItem[];
+  createdAt?: string;
+};
+
+export type StockEntryDraft = {
+  supplierName?: string;
+  supplierInvoiceNo?: string;
+  entryDate?: string;
+  sourceImageData?: string;
+  items: {
+    productId: number;
+    quantity: number;
+    purchaseRate: number;
+  }[];
+};
+
 export type Customer = {
   id?: number;
   name: string;
