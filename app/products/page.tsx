@@ -165,10 +165,12 @@ export default function ProductsPage() {
   return (
     <div className="fade-in">
       <PageHeader
-        eyebrow="Catalogue"
-        title="Products"
-        description="Keep your SKU catalogue, pricing and stock levels in sync with the Spring Boot API."
-      />
+  eyebrow="Catalogue"
+  title="Products"
+  description="Manage products, selling prices, purchase costs and available stock."
+  actionHref="/stock-in"
+  actionLabel="Stock In"
+/>
 
       {error && (
         <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
@@ -201,7 +203,8 @@ export default function ProductsPage() {
           <div className="hidden grid-cols-[1.4fr_.8fr_.7fr_.7fr_80px] gap-4 border-b border-slate-100 px-5 py-3 text-[11px] font-black uppercase tracking-wider text-slate-400 md:grid">
             <div>Product</div>
             <div>SKU</div>
-            <div>Price</div>
+            <div>Purchase</div>
+            <div>Selling</div>
             <div>Stock</div>
             <div />
           </div>
@@ -229,10 +232,25 @@ export default function ProductsPage() {
                   {p.sku || "—"}
                 </div>
 
-                <div className="font-black">
-                  {formatCurrency(p.price)}
-                </div>
+              <div>
+  <div className="text-xs text-slate-400">
+    Cost
+  </div>
 
+  <div className="font-bold">
+    {formatCurrency(p.costPrice)}
+  </div>
+</div>
+
+<div>
+  <div className="text-xs text-slate-400">
+    Sale
+  </div>
+
+  <div className="font-black">
+    {formatCurrency(p.price)}
+  </div>
+</div>
                 <div
                   className={
                     Number(p.stock) <= 5
