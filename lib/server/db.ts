@@ -15,7 +15,7 @@ export async function connectDB() {
   if (mongoose.connection.readyState === 1) return mongoose;
   if (!global.mongooseConnection) {
     global.mongooseConnection = mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 100000,
       maxPoolSize: 10,
     });
   }
