@@ -323,11 +323,11 @@ export async function createInvoice(input: any) {
     await session.withTransaction(async () => {
       const built: any = await buildInvoice(input, null, session);
       for (const item of built.items) {
-        const updated = await Product.findOneAndUpdate(
-          { id: item.product.id, stock: { $gte: item.quantity } },
-          { $inc: { stock: -item.quantity } },
-          { new: true, session }
-        ).lean();
+       const updated = await Product.findOneAndUpdate(
+  { id: item.product.id },
+  { $inc: { stock: -item.quantity } },
+  { new: true, session }
+).lean();
         if (!updated) throw new Error(`Insufficient stock for ${item.product.name}. Available stock may be lower than requested quantity.`);
       }
       built.inventoryAdjusted = true;
