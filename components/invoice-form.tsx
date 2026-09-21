@@ -393,10 +393,6 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
     }
 
     for (const line of lines) {
-      if (mode === "create" && Number(line.quantity) > Number(line.product.stock)) {
-        setError(`${getProductLabel(line.product)} has only ${line.product.stock} in stock.`);
-        return;
-      }
       if (Number(line.quantity) <= 0) {
         setError(`Quantity for ${getProductLabel(line.product)} must be greater than zero.`);
         return;
