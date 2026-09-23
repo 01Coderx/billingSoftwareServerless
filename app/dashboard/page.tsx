@@ -4,18 +4,42 @@ import { useEffect, useState } from "react";
 import { ArrowUpRight, Boxes, IndianRupee, Users, AlertTriangle, ReceiptText, TrendingUp, Package } from "lucide-react";
 import { api } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
-import type { Product } from "@/types/billing";
+// import type { Product } from "@/types/billing";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/data-state";
 import { PageHeader } from "@/components/page-header";
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export default function Dashboard() {
-  const [data, setData] = useState<any>(null); const [products, setProducts] = useState<Product[]>([]); const [customers, setCustomers] = useState<any[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState("");
-  async function load() { try { setLoading(true); const [analytics,p,c] = await Promise.all([api.dashboard.analytics(), api.products.list(), api.customers.list()]); setData(analytics); setProducts(p); setCustomers(c); setError(""); } catch(e) { setError(e instanceof Error ? e.message : "Could not load dashboard"); } finally { setLoading(false); } }
+  const [data, setData] = useState<any>(null);
+  // const [products, setProducts] = useState<Product[]>([]);
+  // const [customers, setCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  
+ async function load() {
+  try {
+    setLoading(true);
+
+    const analytics = await api.dashboard.analytics();
+
+    setData(analytics);
+    setError("");
+  } catch (e) {
+    setError(
+      e instanceof Error
+        ? e.message
+        : "Could not load dashboard"
+    );
+  } finally {
+    setLoading(false);
+  }
+}
   useEffect(()=>{load()},[]);
   if (loading) return <LoadingState label="Loading live analytics…"/>;
-  const t=data?.totals||{revenue:0,cost:0,profit:0,units:0,outstanding:0}; const cm=data?.currentMonth||{revenue:0,units:0,profit:0}; const low=products.filter(p=>Number(p.stock)<=5).slice(0,5);
+  const t=data?.totals||{revenue:0,cost:0,profit:0,units:0,outstanding:0};
+  const cm=data?.currentMonth||{revenue:0,units:0,profit:0};
+  const low = data?.lowStockProducts || [];
   const cards=[
     ["This month revenue",formatCurrency(cm.revenue),IndianRupee,`${Number(cm.units).toLocaleString("en-IN")} units sold this month`],
     ["Total units sold",Number(t.units).toLocaleString("en-IN"),Package,"All non-cancelled invoices"],
