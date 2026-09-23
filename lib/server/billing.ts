@@ -313,7 +313,59 @@ function stockMap(items: any[]) {
   return map;
 }
 
-export async function listInvoices() { return Invoice.find().sort({ id: -1 }).lean(); }
+export async function listInvoices({
+  page = 1,
+  limit = 20,
+  search = "",
+  date = "",
+}: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  date?: string;
+} = {}) {
+  await connectDB();
+
+  const filter: any = {};
+
+  if (search) {
+    filter.$or = [
+      { invoiceNumber: { $regex: search, $options: "i" } },
+      { status: { $regex: search, $options: "i" } },
+      { "customer.name": { $regex: search, $options: "i" } },
+    ];
+  }
+
+  if (date) {
+    const start = new Date(`${date}T00:00:00.000Z`);
+    const end = new Date(`${date}T23:59:59.999Z`);
+
+    filter.createdAt = {
+      $gte: start,
+      $lte: end,
+    };
+  }
+
+  const skip = (page - 1) * limit;
+
+  const [invoices, total] = await Promise.all([
+    Invoice.find(filter)
+      .sort({ id: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+
+    Invoice.countDocuments(filter),
+  ]);
+
+  return {
+    invoices,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+}
 export async function getInvoice(id: string | number) { return Invoice.findOne({ id: Number(id) }).lean(); }
 
 export async function createInvoice(input: any) {
