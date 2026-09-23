@@ -124,34 +124,68 @@ export const api = {
     update: (data: any) => request<any>("/api/settings", { method: "PUT", body: JSON.stringify(data) }),
   },
 
- invoices: {
-  list: (params?: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    date?: string;
-  }) => {
-    const query = new URLSearchParams();
+   invoices: {
+    list: (params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      date?: string;
+    }) => {
+      const query = new URLSearchParams();
 
-    if (params?.page) query.set("page", String(params.page));
-    if (params?.limit) query.set("limit", String(params.limit));
-    if (params?.search) query.set("search", params.search);
-    if (params?.date) query.set("date", params.date);
+      if (params?.page) query.set("page", String(params.page));
+      if (params?.limit) query.set("limit", String(params.limit));
+      if (params?.search) query.set("search", params.search);
+      if (params?.date) query.set("date", params.date);
 
-    const queryString = query.toString();
+      const queryString = query.toString();
 
-    return request<{
-      invoices: Invoice[];
-      total: number;
-      page: number;
-      limit: number;
-      totalPages: number;
-    }>(
-      `/api/invoices${queryString ? `?${queryString}` : ""}`
-    );
+      return request<{
+        invoices: Invoice[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      }>(
+        `/api/invoices${queryString ? `?${queryString}` : ""}`
+      );
+    },
+
+    getAll: () => request<Invoice[]>("/api/invoices"),
+
+    get: (id: string | number) =>
+      request<Invoice>(`/api/invoices/${id}`),
+
+    getById: (id: string | number) =>
+      request<Invoice>(`/api/invoices/${id}`),
+
+    create: (data: InvoiceDraft) =>
+      request<Invoice>("/api/invoices", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+
+    update: (id: string | number, data: Partial<InvoiceDraft>) =>
+      request<Invoice>(`/api/invoices/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+
+    remove: (id: string | number) =>
+      request<void>(`/api/invoices/${id}`, {
+        method: "DELETE",
+      }),
+
+    delete: (id: string | number) =>
+      request<void>(`/api/invoices/${id}`, {
+        method: "DELETE",
+      }),
+
+    pdf: (id: string | number) =>
+      request<Blob>(`/api/invoices/${id}/pdf`),
+
+    downloadPdf: (id: string | number) =>
+      request<Blob>(`/api/invoices/${id}/pdf`),
   },
-
-  getAll: () => request<Invoice[]>("/api/invoices"),
-
   // baaki same...
 };
