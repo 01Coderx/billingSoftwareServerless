@@ -51,6 +51,29 @@ export default function Dashboard() {
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{cards.map(([label,value,Icon,sub]:any)=><div className="card p-5" key={label}><div className="flex justify-between"><div className="grid size-11 place-items-center rounded-2xl bg-blue-50 text-blue-600"><Icon size={20}/></div><ArrowUpRight size={17} className="text-slate-300"/></div><div className="mt-5 text-2xl font-black tracking-tight">{value}</div><div className="mt-1 text-sm font-bold text-slate-700">{label}</div><div className="mt-1 text-xs text-slate-500">{sub}</div></div>)}</div>
     <div className="mt-5 grid gap-5 xl:grid-cols-2"><section className="card p-5"><div><h2 className="font-black">Monthly sales & profit</h2><p className="text-xs text-slate-500">Revenue, cost and gross profit by month.</p></div><div className="mt-5 h-80"><ResponsiveContainer width="100%" height="100%"><BarChart data={data?.monthly||[]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis/><Tooltip formatter={(v:any)=>formatCurrency(Number(v))}/><Bar dataKey="revenue" name="Revenue" fill="#2563eb"/><Bar dataKey="profit" name="Profit" fill="#16a34a"/></BarChart></ResponsiveContainer></div></section>
     <section className="card p-5"><div><h2 className="font-black">Units sold trend</h2><p className="text-xs text-slate-500">Total quantities invoiced each month.</p></div><div className="mt-5 h-80"><ResponsiveContainer width="100%" height="100%"><LineChart data={data?.monthly||[]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis/><Tooltip/><Line type="monotone" dataKey="units" name="Units" stroke="#7c3aed" strokeWidth={3}/></LineChart></ResponsiveContainer></div></section></div>
-    <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_1fr]"><section className="card p-5"><div className="flex items-center justify-between"><div><h2 className="font-black">Inventory attention</h2><p className="text-xs text-slate-500">Items at or below 5 units.</p></div><AlertTriangle size={18} className="text-amber-500"/></div><div className="mt-4 space-y-3">{low.length?low.map(p=><div key={p.id} className="flex justify-between rounded-xl border border-slate-100 p-3"><div><div className="font-bold">{p.name}</div><div className="text-xs text-slate-500">{p.sku||"No SKU"}</div></div><div className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">{p.stock} left</div></div>):<div className="rounded-xl bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">No low-stock products.</div>}</div></section><section className="card p-5"><div className="flex items-center justify-between"><div><h2 className="font-black">Workspace</h2><p className="text-xs text-slate-500">{customers.length} customers · {products.length} products</p></div><Boxes size={18} className="text-slate-400"/></div><div className="mt-4 grid gap-2 sm:grid-cols-2"><Button asChild variant="secondary"><Link href="/products">Manage inventory</Link></Button><Button asChild><Link href="/invoices">Open invoices</Link></Button></div></section></div>
+    <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_1fr]">
+      <section className="card p-5">
+        <div className="flex items-center justify-between"><div>
+          <h2 className="font-black">Inventory attention</h2>
+          <p className="text-xs text-slate-500">Items at or below 5 units.</p>
+        </div><AlertTriangle size={18} className="text-amber-500"/></div>
+        <div className="mt-4 space-y-3">{low.length?low.map(p=><div key={p.id} className="flex justify-between rounded-xl border border-slate-100 p-3"><div>
+          <div className="font-bold">{p.name}</div>
+          <div className="text-xs text-slate-500">{p.sku||"No SKU"}</div>
+        </div>
+          <div className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">{p.stock} left</div>
+        </div>):<div className="rounded-xl bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">No low-stock products.</div>}</div></section>
+      <section className="card p-5">
+  <div className="flex items-center justify-between">
+    <div>
+      <h2 className="font-black">Workspace</h2>
+      <p className="text-xs text-slate-500">
+        {data?.counts?.customers ?? 0} customers ·{" "}
+        {data?.counts?.products ?? 0} products
+      </p>
+    </div><Boxes size={18} className="text-slate-400"/>
+      </div><div className="mt-4 grid gap-2 sm:grid-cols-2"><Button asChild variant="secondary">
+        <Link href="/products">Manage inventory</Link></Button><Button asChild><Link href="/invoices">Open invoices</Link></Button></div>
+      </section></div>
   </div>;
 }
