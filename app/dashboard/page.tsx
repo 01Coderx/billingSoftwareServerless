@@ -39,7 +39,12 @@ export default function Dashboard() {
   if (loading) return <LoadingState label="Loading live analytics…"/>;
   const t=data?.totals||{revenue:0,cost:0,profit:0,units:0,outstanding:0};
   const cm=data?.currentMonth||{revenue:0,units:0,profit:0};
-  const low = data?.lowStockProducts || [];
+  const low: Array<{
+  id: string;
+  name: string;
+  sku?: string | null;
+  stock: number;
+}> = data?.lowStockProducts || [];
   const cards=[
     ["This month revenue",formatCurrency(cm.revenue),IndianRupee,`${Number(cm.units).toLocaleString("en-IN")} units sold this month`],
     ["Total units sold",Number(t.units).toLocaleString("en-IN"),Package,"All non-cancelled invoices"],
