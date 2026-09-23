@@ -1,8 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, FileText, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  ArrowUpRight,
+  FileText,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+
 import { api } from "@/lib/api";
 import type { Invoice } from "@/types/billing";
 import { Button } from "@/components/ui/button";
@@ -11,71 +21,109 @@ import { LoadingState, EmptyState } from "@/components/data-state";
 import { StatusBadge } from "@/components/status-badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
+const PAGE_SIZE = 25;
+
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [search, setSearch] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [dateFilter, setDateFilter] = useState("");
-  
-  async function load() {
+
+  async function load(
+    requestedPage = page,
+    requestedSearch = search,
+    requestedDate = dateFilter,
+  ) {
     setLoading(true);
     setError("");
+
     try {
-      setInvoices(await api.invoices.list());
+      const result = await api.invoices.list({
+        page: requestedPage,
+        limit: PAGE_SIZE,
+        search: requestedSearch.trim(),
+        date: requestedDate,
+      });
+
+      setInvoices(result.items);
+      setPage(result.page);
+      setTotalPages(result.totalPages);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load invoices");
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Could not load invoices",
+      );
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    load();
+    load(1, "", "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
- const filtered = useMemo(() => {
-    return invoices.filter((invoice: Invoice) => {
-      const matchesSearch = search 
-        ? (invoice.customer?.name || "").toLowerCase().includes(search.toLowerCase()) || 
-          (invoice.status || "").toLowerCase().includes(search.toLowerCase()) ||
-          (invoice.invoiceNumber || "").toLowerCase().includes(search.toLowerCase())
-        : true;
+  function applyFilters() {
+    load(1, search, dateFilter);
+  }
 
-      const billDateString = invoice.createdAt || invoice.dueDate;
-      const matchesDate = dateFilter && billDateString
-        ? new Date(billDateString).toISOString().slice(0, 10) === dateFilter
-        : true;
+  function clearFilters() {
+    setSearch("");
+    setDateFilter("");
+    load(1, "", "");
+  }
 
-      return matchesSearch && matchesDate;
-    });
-  }, [invoices, search, dateFilter]);
+  function goToPage(nextPage: number) {
+    if (nextPage < 1 || nextPage > totalPages) return;
 
-  
+    load(nextPage, search, dateFilter);
+  }
+
   async function remove(id: number) {
     if (!window.confirm("Delete this bill permanently?")) return;
 
     setDeletingId(id);
     setError("");
+
     try {
       await api.invoices.remove(id);
-      setInvoices((current) => current.filter((invoice) => invoice.id !== id));
+
+      const shouldGoBack =
+        invoices.length === 1 && page > 1;
+
+      await load(
+        shouldGoBack ? page - 1 : page,
+        search,
+        dateFilter,
+      );
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not delete invoice");
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Could not delete invoice",
+      );
     } finally {
       setDeletingId(null);
     }
   }
 
-  if (loading) return <LoadingState label="Loading bills…" />;
+  if (loading && !invoices.length) {
+    return <LoadingState label="Loading bills…" />;
+  }
 
   return (
     <div className="fade-in">
       <PageHeader
         eyebrow="Sales"
         title="Bills"
-        description="Create, inspect, update, delete and download bills directly from your Spring Boot database."
+        description="Create, inspect, update, delete and download bills."
         actionHref="/invoices/new"
         actionLabel="New bill"
       />
@@ -86,10 +134,10 @@ export default function InvoicesPage() {
         </div>
       )}
 
-      {!invoices.length ? (
+      {!loading && !invoices.length && !search && !dateFilter ? (
         <EmptyState
           title="No bills yet"
-          description="Create your first bill and it will appear here from the backend."
+          description="Create your first bill and it will appear here."
           action={
             <Button asChild>
               <Link href="/invoices/new">
@@ -99,78 +147,109 @@ export default function InvoicesPage() {
             </Button>
           }
         />
-) : (
+      ) : (
         <section className="card overflow-hidden">
-          <div className="flex flex-col gap-3 border-b border-slate-100 p-5 md:flex-row md:items-center">
+          {/* FILTERS */}
+          <div className="flex flex-col gap-3 border-b border-slate-100 p-5 lg:flex-row lg:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search
+                size={17}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
 
-  {/* SEARCH INPUT */}
-  <div className="relative min-w-0 flex-1 md:min-w-[300px]">
-    <Search
-      size={17}
-      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-    />
+              <input
+                type="text"
+                className="input w-full pl-10"
+                placeholder="Search bill, customer or status"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    applyFilters();
+                  }
+                }}
+              />
+            </div>
 
-    <input
-      type="text"
-      className="input w-full pl-10"
-      placeholder="Search bill, customer or status"
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-    />
-  </div>
+            <input
+              type="date"
+              className="input w-full shrink-0 lg:w-[180px]"
+              value={dateFilter}
+              onChange={(e) => {
+                const value = e.target.value;
+                setDateFilter(value);
+                load(1, search, value);
+              }}
+              aria-label="Filter bills by date"
+            />
 
-  {/* DATE INPUT — SEPARATE */}
-  <div className="w-full shrink-0 md:w-[180px]">
-  <input
-    type="date"
-    className="input w-full"
-    value={dateFilter}
-    onChange={(e) => setDateFilter(e.target.value)}
-    aria-label="Filter bills by date"
-  />
-</div>
-  {dateFilter && (
-    <button
-      type="button"
-      onClick={() => setDateFilter("")}
-      className="text-sm font-bold text-slate-500 hover:text-slate-900"
-    >
-      Clear Date
-    </button>
-  )}
+            <Button
+              onClick={applyFilters}
+              disabled={loading}
+            >
+              <Search size={16} />
+              Search
+            </Button>
 
-  {/* REFRESH */}
-  <Button variant="secondary" onClick={load}>
-    <RefreshCw size={16} />
-    Refresh
-  </Button>
+            {(search || dateFilter) && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-sm font-bold text-slate-500 hover:text-slate-900"
+              >
+                Clear
+              </button>
+            )}
 
-</div>
+            <Button
+              variant="secondary"
+              onClick={() => load(page, search, dateFilter)}
+              disabled={loading}
+            >
+              <RefreshCw
+                size={16}
+                className={loading ? "animate-spin" : ""}
+              />
+              Refresh
+            </Button>
+          </div>
+
+          {/* DESKTOP HEADER */}
           <div className="hidden grid-cols-[1.2fr_1.2fr_.8fr_.8fr_.8fr_90px] gap-4 border-b border-slate-100 px-5 py-3 text-[11px] font-black uppercase tracking-wider text-slate-400 md:grid">
-  <div>Bill</div>
-  <div>Customer</div>
-  <div>Date</div>
-  <div>Status</div>
-  <div>Total</div>
-  <div />
-</div>
+            <div>Bill</div>
+            <div>Customer</div>
+            <div>Date</div>
+            <div>Status</div>
+            <div>Total</div>
+            <div />
+          </div>
 
+          {/* LIST */}
           <div className="divide-y divide-slate-100">
-            {filtered.map((invoice) => (
+            {invoices.map((invoice) => (
               <div
                 key={invoice.id}
                 className="grid gap-3 p-5 md:grid-cols-[1.2fr_1.2fr_.8fr_.8fr_.8fr_90px] md:items-center"
               >
-                <Link href={`/invoices/${invoice.id}`} className="min-w-0">
-                  <div className="font-black">{invoice.invoiceNumber}</div>
-                  <div className="text-xs text-slate-500">#{invoice.id}</div>
+                <Link
+                  href={`/invoices/${invoice.id}`}
+                  className="min-w-0"
+                >
+                  <div className="font-black">
+                    {invoice.invoiceNumber}
+                  </div>
+
+                  <div className="text-xs text-slate-500">
+                    #{invoice.id}
+                  </div>
                 </Link>
 
                 <Link
                   href={`/invoices/${invoice.id}`}
                   className="text-sm font-semibold text-slate-700"
                 >
-                  {invoice.customer?.name || "Walk-in customer"}
+                  {invoice.customer?.name ||
+                    "Walk-in customer"}
                 </Link>
 
                 <div className="text-xs font-semibold text-slate-500">
@@ -178,13 +257,18 @@ export default function InvoicesPage() {
                 </div>
 
                 <div>
-                  <StatusBadge status={invoice.status} />
+                  <StatusBadge
+                    status={
+                      invoice.paymentStatus ||
+                      invoice.status
+                    }
+                  />
                 </div>
 
-                  <div className="text-sm font-black">
-  {formatCurrency(invoice.total)}
-</div>
-                
+                <div className="text-sm font-black">
+                  {formatCurrency(invoice.total)}
+                </div>
+
                 <div className="flex items-center justify-end gap-1">
                   <Link
                     href={`/invoices/${invoice.id}`}
@@ -193,6 +277,7 @@ export default function InvoicesPage() {
                   >
                     <ArrowUpRight size={17} />
                   </Link>
+
                   <button
                     onClick={() => remove(invoice.id)}
                     disabled={deletingId === invoice.id}
@@ -204,24 +289,58 @@ export default function InvoicesPage() {
                 </div>
 
                 <div className="flex items-center justify-between border-t border-slate-100 pt-3 md:hidden">
-                  <span className="text-xs text-slate-500">Total</span>
-                  <strong>{formatCurrency(invoice.total)}</strong>
+                  <span className="text-xs text-slate-500">
+                    Total
+                  </span>
+
+                  <strong>
+                    {formatCurrency(invoice.total)}
+                  </strong>
                 </div>
               </div>
             ))}
 
-            {!filtered.length && (
+            {!invoices.length && (
               <div className="p-12 text-center text-sm text-slate-400">
-                No bill matches.
+                No bills match your search.
               </div>
             )}
+          </div>
+
+          {/* PAGINATION */}
+          <div className="flex flex-col gap-3 border-t border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs font-semibold text-slate-500">
+              Page {page} of {totalPages}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => goToPage(page - 1)}
+                disabled={page <= 1 || loading}
+              >
+                <ChevronLeft size={16} />
+                Previous
+              </Button>
+
+              <Button
+                variant="secondary"
+                onClick={() => goToPage(page + 1)}
+                disabled={
+                  page >= totalPages || loading
+                }
+              >
+                Next
+                <ChevronRight size={16} />
+              </Button>
+            </div>
           </div>
         </section>
       )}
 
       <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-400">
         <FileText size={14} />
-        PDF downloads use the backend&apos;s <code>/api/invoices/:id/pdf</code> endpoint.
+        Showing only {PAGE_SIZE} bills per request.
       </div>
     </div>
   );
