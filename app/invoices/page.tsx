@@ -1,8 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, FileText, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  ArrowUpRight,
+  FileText,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { api } from "@/lib/api";
 import type { Invoice } from "@/types/billing";
 import { Button } from "@/components/ui/button";
@@ -18,64 +27,90 @@ export default function InvoicesPage() {
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [dateFilter, setDateFilter] = useState("");
-  
-  async function load() {
+
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const LIMIT = 20;
+
+  async function load(
+    requestedPage = page,
+    requestedSearch = search,
+    requestedDate = dateFilter
+  ) {
     setLoading(true);
     setError("");
+
     try {
-      setInvoices(await api.invoices.list());
+      const result = await api.invoices.list({
+        page: requestedPage,
+        limit: LIMIT,
+        search: requestedSearch,
+        date: requestedDate,
+      });
+
+      setInvoices(result.invoices);
+      setTotal(result.total);
+      setTotalPages(result.totalPages);
+      setPage(result.page);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load invoices");
+      setError(
+        e instanceof Error ? e.message : "Could not load invoices"
+      );
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    load();
+    load(1, "", "");
   }, []);
 
- const filtered = useMemo(() => {
-    return invoices.filter((invoice: Invoice) => {
-      const matchesSearch = search 
-        ? (invoice.customer?.name || "").toLowerCase().includes(search.toLowerCase()) || 
-          (invoice.status || "").toLowerCase().includes(search.toLowerCase()) ||
-          (invoice.invoiceNumber || "").toLowerCase().includes(search.toLowerCase())
-        : true;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      load(1, search, dateFilter);
+    }, 300);
 
-      const billDateString = invoice.createdAt || invoice.dueDate;
-      const matchesDate = dateFilter && billDateString
-        ? new Date(billDateString).toISOString().slice(0, 10) === dateFilter
-        : true;
+    return () => clearTimeout(timer);
+  }, [search, dateFilter]);
 
-      return matchesSearch && matchesDate;
-    });
-  }, [invoices, search, dateFilter]);
-
-  
   async function remove(id: number) {
     if (!window.confirm("Delete this bill permanently?")) return;
 
     setDeletingId(id);
     setError("");
+
     try {
       await api.invoices.remove(id);
-      setInvoices((current) => current.filter((invoice) => invoice.id !== id));
+
+      const nextPage =
+        invoices.length === 1 && page > 1
+          ? page - 1
+          : page;
+
+      await load(nextPage, search, dateFilter);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not delete invoice");
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Could not delete invoice"
+      );
     } finally {
       setDeletingId(null);
     }
   }
 
-  if (loading) return <LoadingState label="Loading bills…" />;
+  if (loading && !invoices.length) {
+    return <LoadingState label="Loading bills…" />;
+  }
 
   return (
     <div className="fade-in">
       <PageHeader
         eyebrow="Sales"
         title="Bills"
-        description="Create, inspect, update, delete and download bills directly from your Spring Boot database."
+        description="Create, inspect, update, delete and download bills directly from your database."
         actionHref="/invoices/new"
         actionLabel="New bill"
       />
@@ -86,7 +121,7 @@ export default function InvoicesPage() {
         </div>
       )}
 
-      {!invoices.length ? (
+      {!total ? (
         <EmptyState
           title="No bills yet"
           description="Create your first bill and it will appear here from the backend."
@@ -99,71 +134,96 @@ export default function InvoicesPage() {
             </Button>
           }
         />
-) : (
+      ) : (
         <section className="card overflow-hidden">
           <div className="flex flex-col gap-3 border-b border-slate-100 p-5 md:flex-row md:items-center">
+            {/* SEARCH */}
+            <div className="relative min-w-0 flex-1 md:min-w-[300px]">
+              <Search
+                size={17}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
 
-  {/* SEARCH INPUT */}
-  <div className="relative min-w-0 flex-1 md:min-w-[300px]">
-    <Search
-      size={17}
-      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-    />
+              <input
+                type="text"
+                className="input w-full pl-10"
+                placeholder="Search bill, customer or status"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
 
-    <input
-      type="text"
-      className="input w-full pl-10"
-      placeholder="Search bill, customer or status"
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-    />
-  </div>
+            {/* DATE */}
+            <div className="w-full shrink-0 md:w-[180px]">
+              <input
+                type="date"
+                className="input w-full"
+                value={dateFilter}
+                onChange={(e) => {
+                  setDateFilter(e.target.value);
+                  setPage(1);
+                }}
+                aria-label="Filter bills by date"
+              />
+            </div>
 
-  {/* DATE INPUT — SEPARATE */}
-  <div className="w-full shrink-0 md:w-[180px]">
-  <input
-    type="date"
-    className="input w-full"
-    value={dateFilter}
-    onChange={(e) => setDateFilter(e.target.value)}
-    aria-label="Filter bills by date"
-  />
-</div>
-  {dateFilter && (
-    <button
-      type="button"
-      onClick={() => setDateFilter("")}
-      className="text-sm font-bold text-slate-500 hover:text-slate-900"
-    >
-      Clear Date
-    </button>
-  )}
+            {dateFilter && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDateFilter("");
+                  setPage(1);
+                }}
+                className="text-sm font-bold text-slate-500 hover:text-slate-900"
+              >
+                Clear Date
+              </button>
+            )}
 
-  {/* REFRESH */}
-  <Button variant="secondary" onClick={load}>
-    <RefreshCw size={16} />
-    Refresh
-  </Button>
+            {/* REFRESH */}
+            <Button
+              variant="secondary"
+              onClick={() => load(page, search, dateFilter)}
+              disabled={loading}
+            >
+              <RefreshCw
+                size={16}
+                className={loading ? "animate-spin" : ""}
+              />
+              Refresh
+            </Button>
+          </div>
 
-</div>
+          {/* HEADER */}
           <div className="hidden grid-cols-[1.2fr_1.2fr_.8fr_.8fr_.8fr_90px] gap-4 border-b border-slate-100 px-5 py-3 text-[11px] font-black uppercase tracking-wider text-slate-400 md:grid">
-  <div>Bill</div>
-  <div>Customer</div>
-  <div>Date</div>
-  <div>Status</div>
-  <div>Total</div>
-  <div />
-</div>
+            <div>Bill</div>
+            <div>Customer</div>
+            <div>Date</div>
+            <div>Status</div>
+            <div>Total</div>
+            <div />
+          </div>
 
+          {/* INVOICES */}
           <div className="divide-y divide-slate-100">
-            {filtered.map((invoice) => (
+            {invoices.map((invoice) => (
               <div
                 key={invoice.id}
                 className="grid gap-3 p-5 md:grid-cols-[1.2fr_1.2fr_.8fr_.8fr_.8fr_90px] md:items-center"
               >
-                <Link href={`/invoices/${invoice.id}`} className="min-w-0">
-                  <div className="font-black">{invoice.invoiceNumber}</div>
-                  <div className="text-xs text-slate-500">#{invoice.id}</div>
+                <Link
+                  href={`/invoices/${invoice.id}`}
+                  className="min-w-0"
+                >
+                  <div className="font-black">
+                    {invoice.invoiceNumber}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    #{invoice.id}
+                  </div>
                 </Link>
 
                 <Link
@@ -181,10 +241,10 @@ export default function InvoicesPage() {
                   <StatusBadge status={invoice.status} />
                 </div>
 
-                  <div className="text-sm font-black">
-  {formatCurrency(invoice.total)}
-</div>
-                
+                <div className="text-sm font-black">
+                  {formatCurrency(invoice.total)}
+                </div>
+
                 <div className="flex items-center justify-end gap-1">
                   <Link
                     href={`/invoices/${invoice.id}`}
@@ -193,6 +253,7 @@ export default function InvoicesPage() {
                   >
                     <ArrowUpRight size={17} />
                   </Link>
+
                   <button
                     onClick={() => remove(invoice.id)}
                     disabled={deletingId === invoice.id}
@@ -204,24 +265,62 @@ export default function InvoicesPage() {
                 </div>
 
                 <div className="flex items-center justify-between border-t border-slate-100 pt-3 md:hidden">
-                  <span className="text-xs text-slate-500">Total</span>
+                  <span className="text-xs text-slate-500">
+                    Total
+                  </span>
                   <strong>{formatCurrency(invoice.total)}</strong>
                 </div>
               </div>
             ))}
 
-            {!filtered.length && (
+            {!invoices.length && (
               <div className="p-12 text-center text-sm text-slate-400">
                 No bill matches.
               </div>
             )}
+          </div>
+
+          {/* PAGINATION */}
+          <div className="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs font-semibold text-slate-500">
+              Showing {invoices.length} of {total} bills
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  load(page - 1, search, dateFilter)
+                }
+                disabled={page <= 1 || loading}
+              >
+                <ChevronLeft size={16} />
+                Previous
+              </Button>
+
+              <span className="min-w-[90px] text-center text-sm font-bold text-slate-600">
+                Page {page} of {totalPages}
+              </span>
+
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  load(page + 1, search, dateFilter)
+                }
+                disabled={page >= totalPages || loading}
+              >
+                Next
+                <ChevronRight size={16} />
+              </Button>
+            </div>
           </div>
         </section>
       )}
 
       <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-slate-400">
         <FileText size={14} />
-        PDF downloads use the backend&apos;s <code>/api/invoices/:id/pdf</code> endpoint.
+        PDF downloads use the backend&apos;s{" "}
+        <code>/api/invoices/:id/pdf</code> endpoint.
       </div>
     </div>
   );
