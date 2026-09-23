@@ -449,34 +449,180 @@ export async function getCustomerLedger(id: string | number) {
 }
 
 export async function getDashboardAnalytics() {
-  const monthly = await Invoice.aggregate([
-    { $match: { status: { $ne: "CANCELLED" } } },
-    { $unwind: "$items" },
-    { $group: {
-      _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
-      revenue: { $sum: "$items.amount" },
-      cost: { $sum: { $multiply: ["$items.costPrice", "$items.quantity"] } },
-      units: { $sum: "$items.quantity" },
-    }},
-    { $addFields: { profit: { $subtract: ["$revenue", "$cost"] } } },
-    { $sort: { "_id.year": 1, "_id.month": 1 } },
-  ]);
-  const totals = monthly.reduce((a: any, m: any) => {
-    a.revenue += Number(m.revenue || 0); a.cost += Number(m.cost || 0); a.units += Number(m.units || 0); a.profit += Number(m.profit || 0); return a;
-  }, { revenue: 0, cost: 0, units: 0, profit: 0 });
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const [outstanding, currentMonth] = await Promise.all([
-    Invoice.aggregate([{ $match: { status: { $ne: "CANCELLED" }, amountDue: { $gt: 0 } } }, { $group: { _id: null, value: { $sum: "$amountDue" } } }]),
-    Invoice.aggregate([
-      { $match: { status: { $ne: "CANCELLED" }, createdAt: { $gte: monthStart, $lt: nextMonth } } },
-      { $unwind: "$items" },
-      { $group: { _id: null, revenue: { $sum: "$items.amount" }, cost: { $sum: { $multiply: ["$items.costPrice", "$items.quantity"] } }, units: { $sum: "$items.quantity" } } },
-    ]),
-  ]);
+
+  const monthStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    1
+  );
+
+  const nextMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    1
+  );
+
+  const [monthly, outstanding, currentMonth, productCount, customerCount, lowStockProducts] =
+    await Promise.all([
+      Invoice.aggregate([
+        {
+          $match: {
+            status: { $ne: "CANCELLED" },
+          },
+        },
+        {
+          $unwind: "$items",
+        },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$createdAt" },
+              month: { $month: "$createdAt" },
+            },
+            revenue: { $sum: "$items.amount" },
+            cost: {
+              $sum: {
+                $multiply: [
+                  "$items.costPrice",
+                  "$items.quantity",
+                ],
+              },
+            },
+            units: { $sum: "$items.quantity" },
+          },
+        },
+        {
+          $addFields: {
+            profit: {
+              $subtract: ["$revenue", "$cost"],
+            },
+          },
+        },
+        {
+          $sort: {
+            "_id.year": 1,
+            "_id.month": 1,
+          },
+        },
+      ]),
+
+      Invoice.aggregate([
+        {
+          $match: {
+            status: { $ne: "CANCELLED" },
+            amountDue: { $gt: 0 },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            value: { $sum: "$amountDue" },
+          },
+        },
+      ]),
+
+      Invoice.aggregate([
+        {
+          $match: {
+            status: { $ne: "CANCELLED" },
+            createdAt: {
+              $gte: monthStart,
+              $lt: nextMonth,
+            },
+          },
+        },
+        {
+          $unwind: "$items",
+        },
+        {
+          $group: {
+            _id: null,
+            revenue: { $sum: "$items.amount" },
+            cost: {
+              $sum: {
+                $multiply: [
+                  "$items.costPrice",
+                  "$items.quantity",
+                ],
+              },
+            },
+            units: { $sum: "$items.quantity" },
+          },
+        },
+      ]),
+
+      Product.countDocuments(),
+
+      Customer.countDocuments(),
+
+      Product.find({
+        stock: { $lte: 5 },
+      })
+        .select({
+          id: 1,
+          name: 1,
+          sku: 1,
+          stock: 1,
+        })
+        .sort({ stock: 1 })
+        .limit(5)
+        .lean(),
+    ]);
+
+  const totals = monthly.reduce(
+    (a: any, m: any) => {
+      a.revenue += Number(m.revenue || 0);
+      a.cost += Number(m.cost || 0);
+      a.units += Number(m.units || 0);
+      a.profit += Number(m.profit || 0);
+
+      return a;
+    },
+    {
+      revenue: 0,
+      cost: 0,
+      units: 0,
+      profit: 0,
+    }
+  );
+
   const cm = currentMonth[0] || {};
-  return { totals: { ...totals, outstanding: Number(outstanding[0]?.value || 0) }, currentMonth: { revenue: Number(cm.revenue || 0), cost: Number(cm.cost || 0), profit: Number(cm.revenue || 0) - Number(cm.cost || 0), units: Number(cm.units || 0) }, monthly: monthly.map((m: any) => ({ year: m._id.year, month: m._id.month, label: `${String(m._id.month).padStart(2, "0")}/${m._id.year}`, revenue: Number(m.revenue || 0), cost: Number(m.cost || 0), units: Number(m.units || 0), profit: Number(m.profit || 0) })) };
+
+  return {
+    totals: {
+      ...totals,
+      outstanding: Number(
+        outstanding[0]?.value || 0
+      ),
+    },
+
+    currentMonth: {
+      revenue: Number(cm.revenue || 0),
+      cost: Number(cm.cost || 0),
+      profit:
+        Number(cm.revenue || 0) -
+        Number(cm.cost || 0),
+      units: Number(cm.units || 0),
+    },
+
+    monthly: monthly.map((m: any) => ({
+      year: m._id.year,
+      month: m._id.month,
+      label: `${String(m._id.month).padStart(2, "0")}/${m._id.year}`,
+      revenue: Number(m.revenue || 0),
+      cost: Number(m.cost || 0),
+      units: Number(m.units || 0),
+      profit: Number(m.profit || 0),
+    })),
+
+    counts: {
+      products: productCount,
+      customers: customerCount,
+    },
+
+    lowStockProducts,
+  };
 }
 
 export async function getReportsAnalytics() {
