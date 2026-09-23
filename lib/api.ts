@@ -124,109 +124,28 @@ export const api = {
     update: (data: any) => request<any>("/api/settings", { method: "PUT", body: JSON.stringify(data) }),
   },
 
-invoices: {
-  list: async (params?: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    date?: string;
-  }) => {
-    const allInvoices = await request<Invoice[]>("/api/invoices");
-
-    const requestedPage = params?.page ?? 1;
-    const limit = params?.limit ?? 25;
-    const search = params?.search?.trim().toLowerCase() ?? "";
-    const date = params?.date ?? "";
-
-    let filtered = allInvoices;
-
-    // Search by invoice number, customer name, status or payment status
-    if (search) {
-      filtered = filtered.filter((invoice) => {
-        const invoiceNumber =
-          invoice.invoiceNumber?.toLowerCase() ?? "";
-
-        const customerName =
-          invoice.customer?.name?.toLowerCase() ?? "";
-
-        const status =
-          invoice.status?.toLowerCase() ?? "";
-
-        const paymentStatus =
-          invoice.paymentStatus?.toLowerCase() ?? "";
-
-        return (
-          invoiceNumber.includes(search) ||
-          customerName.includes(search) ||
-          status.includes(search) ||
-          paymentStatus.includes(search)
-        );
-      });
-    }
-
-    // Filter by invoice creation date
-    if (date) {
-      filtered = filtered.filter((invoice) => {
-        if (!invoice.createdAt) return false;
-
-        return new Date(invoice.createdAt)
-          .toISOString()
-          .slice(0, 10) === date;
-      });
-    }
-
-    const total = filtered.length;
-    const totalPages = Math.max(1, Math.ceil(total / limit));
-
-    const safePage = Math.min(
-      Math.max(1, requestedPage),
-      totalPages
-    );
-
-    const start = (safePage - 1) * limit;
-    const items = filtered.slice(start, start + limit);
-
-    return {
-      items,
-      page: safePage,
-      totalPages,
-    };
+  invoices: {
+    list: () => request<Invoice[]>("/api/invoices"),
+    getAll: () => request<Invoice[]>("/api/invoices"),
+    get: (id: string | number) => request<Invoice>(`/api/invoices/${id}`),
+    getById: (id: string | number) => request<Invoice>(`/api/invoices/${id}`),
+    create: (data: InvoiceDraft) =>
+      request<Invoice>("/api/invoices", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    update: (id: string | number, data: Partial<InvoiceDraft>) =>
+      request<Invoice>(`/api/invoices/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    remove: (id: string | number) =>
+      request<void>(`/api/invoices/${id}`, { method: "DELETE" }),
+    delete: (id: string | number) =>
+      request<void>(`/api/invoices/${id}`, { method: "DELETE" }),
+    pdf: (id: string | number) =>
+      request<Blob>(`/api/invoices/${id}/pdf`),
+    downloadPdf: (id: string | number) =>
+      request<Blob>(`/api/invoices/${id}/pdf`),
   },
-
-  getAll: () => request<Invoice[]>("/api/invoices"),
-
-  get: (id: string | number) =>
-    request<Invoice>(`/api/invoices/${id}`),
-
-  getById: (id: string | number) =>
-    request<Invoice>(`/api/invoices/${id}`),
-
-  create: (data: InvoiceDraft) =>
-    request<Invoice>("/api/invoices", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-
-  update: (id: string | number, data: Partial<InvoiceDraft>) =>
-    request<Invoice>(`/api/invoices/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    }),
-
-  remove: (id: string | number) =>
-    request<void>(`/api/invoices/${id}`, {
-      method: "DELETE",
-    }),
-
-  delete: (id: string | number) =>
-    request<void>(`/api/invoices/${id}`, {
-      method: "DELETE",
-    }),
-
-  pdf: (id: string | number) =>
-    request<Blob>(`/api/invoices/${id}/pdf`),
-
-  downloadPdf: (id: string | number) =>
-    request<Blob>(`/api/invoices/${id}/pdf`),
-},
 };
