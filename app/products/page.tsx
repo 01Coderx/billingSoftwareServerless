@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Boxes,
   Search,
@@ -35,35 +35,43 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
-  async function load() {
-    setLoading(true);
+const LIMIT = 20;
 
-    try {
-      setProducts(await api.products.list());
-      setError("");
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Could not load products"
-      );
-    } finally {
-      setLoading(false);
-    }
+async function load(
+  requestedPage = page,
+  requestedSearch = search
+) {
+  setLoading(true);
+
+  try {
+    const result = await api.products.list({
+      page: requestedPage,
+      limit: LIMIT,
+      search: requestedSearch,
+    });
+
+    setProducts(result.products);
+    setTotal(result.total);
+    setPage(result.page);
+    setTotalPages(result.totalPages);
+    setError("");
+  } catch (e) {
+    setError(
+      e instanceof Error ? e.message : "Could not load products"
+    );
+  } finally {
+    setLoading(false);
   }
+}
 
-  useEffect(() => {
-    load();
-  }, []);
+useEffect(() => {
+  load(1, "");
+}, []);
 
-  const filtered = useMemo(
-    () =>
-      products.filter((p) =>
-        `${p.name} ${p.sku}`
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      ),
-    [products, search]
-  );
 
   function startEdit(product: Product) {
     if (!product.id) return;
@@ -107,21 +115,18 @@ export default function ProductsPage() {
       };
 
       if (editingId !== null) {
-        const updated = await api.products.update(editingId, data);
+        await api.products.update(editingId, data);
 
-        setProducts((current) =>
-          current.map((product) =>
-            product.id === editingId ? updated : product
-          )
-        );
+      await load(page, search);
 
         setEditingId(null);
         setForm(empty);
       } else {
-        const created = await api.products.create(data);
+       await api.products.create(data);
 
-        setProducts((current) => [created, ...current]);
-        setForm(empty);
+setForm(empty);
+await load(1, search);
+setPage(1);
       }
     } catch (e) {
       setError(
@@ -136,28 +141,34 @@ export default function ProductsPage() {
     }
   }
 
-  async function remove(id: number) {
-    if (!confirm("Delete this product?")) return;
+async function remove(id: number) {
+  if (!confirm("Delete this product?")) return;
 
-    try {
-      await api.products.remove(id);
+  try {
+    await api.products.remove(id);
 
-      setProducts((current) =>
-        current.filter((product) => product.id !== id)
-      );
+    const shouldGoPreviousPage =
+      products.length === 1 && page > 1;
 
-      if (editingId === id) {
-        cancelEdit();
-      }
+    const nextPage = shouldGoPreviousPage
+      ? page - 1
+      : page;
 
-      setError("");
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Could not delete product"
-      );
+    await load(nextPage, search);
+
+    if (editingId === id) {
+      cancelEdit();
     }
-  }
 
+    setError("");
+  } catch (e) {
+    setError(
+      e instanceof Error
+        ? e.message
+        : "Could not delete product"
+    );
+  }
+}
   if (loading) {
     return <LoadingState label="Loading product catalogue…" />;
   }
@@ -191,12 +202,24 @@ export default function ProductsPage() {
                 className="input pl-10"
                 placeholder="Search by product name or SKU"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+  const value = e.target.value;
+  setSearch(value);
+  setPage(1);
+
+  window.clearTimeout(
+    (window as any).__productSearchTimer
+  );
+
+  (window as any).__productSearchTimer = window.setTimeout(() => {
+    load(1, value);
+  }, 300);
+}}
               />
             </div>
 
             <div className="text-sm font-bold text-slate-500">
-              {filtered.length} of {products.length} products
+              Showing {products.length} of {total} products
             </div>
           </div>
 
@@ -210,7 +233,7 @@ export default function ProductsPage() {
           </div>
 
           <div className="divide-y divide-slate-100">
-            {filtered.map((p) => (
+            {products.map((p) => (
               <div
                 key={p.id}
                 className="grid gap-3 p-5 md:grid-cols-[1.4fr_.8fr_.7fr_.7fr_80px] md:items-center"
@@ -283,11 +306,38 @@ export default function ProductsPage() {
               </div>
             ))}
 
-            {!filtered.length && (
-              <div className="p-12 text-center text-sm text-slate-400">
-                No products match your search.
-              </div>
-            )}
+           {!products.length && (
+  <div className="p-12 text-center text-sm text-slate-400">
+    {search
+      ? "No products match your search."
+      : "No products found."}
+  </div>
+)}
+          </div>
+                    <div className="flex items-center justify-between border-t border-slate-100 p-4">
+            <div className="text-sm font-semibold text-slate-500">
+              Page {page} of {totalPages}
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={page <= 1 || loading}
+                onClick={() => load(page - 1, search)}
+              >
+                Previous
+              </Button>
+
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={page >= totalPages || loading}
+                onClick={() => load(page + 1, search)}
+              >
+                Next
+              </Button>
+            </div>
           </div>
         </section>
 
