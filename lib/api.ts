@@ -108,7 +108,7 @@ export const api = {
     `/api/products${queryString ? `?${queryString}` : ""}`
   );
 },
-    getAll: () => request<Product[]>("/api/products"),
+    getAll: () => request<Product[]>("/api/products?all=true"),
     get: (id: string | number) => request<Product>(`/api/products/${id}`),
     getById: (id: string | number) => request<Product>(`/api/products/${id}`),
     create: (data: Partial<Product>) =>
