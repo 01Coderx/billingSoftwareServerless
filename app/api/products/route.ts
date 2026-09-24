@@ -1,5 +1,9 @@
 import { connectDB } from "@/lib/server/db";
-import { createProduct, listProducts } from "@/lib/server/billing";
+import {
+  createProduct,
+  listProducts,
+  listAllProducts,
+} from "@/lib/server/billing";
 import { jsonError } from "@/lib/server/api-error";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +13,12 @@ export async function GET(req: Request) {
     await connectDB();
 
     const { searchParams } = new URL(req.url);
+
+    const all = searchParams.get("all") === "true";
+
+    if (all) {
+      return Response.json(await listAllProducts());
+    }
 
     const page = Math.max(
       1,
@@ -33,7 +43,6 @@ export async function GET(req: Request) {
     return jsonError(e);
   }
 }
-
 export async function POST(req: Request) {
   try {
     await connectDB();
