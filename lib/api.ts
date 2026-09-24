@@ -85,7 +85,29 @@ export const api = {
 },
 
   products: {
-    list: () => request<Product[]>("/api/products"),
+    list: (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}) => {
+  const query = new URLSearchParams();
+
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.search) query.set("search", params.search);
+
+  const queryString = query.toString();
+
+  return request<{
+    products: Product[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }>(
+    `/api/products${queryString ? `?${queryString}` : ""}`
+  );
+},
     getAll: () => request<Product[]>("/api/products"),
     get: (id: string | number) => request<Product>(`/api/products/${id}`),
     getById: (id: string | number) => request<Product>(`/api/products/${id}`),
