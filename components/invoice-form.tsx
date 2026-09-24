@@ -124,8 +124,8 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
     Promise.all([api.products.list(), api.customers.list()])
       .then(([productData, customerData]) => {
         if (!active) return;
-        setProducts(productData || []);
-        setCustomers(customerData || []);
+setProducts(productData?.products || []);
+setCustomers(customerData || []);
 
         if (initialInvoice?.customer) {
           setCustomerQuery(getCustomerLabel(initialInvoice.customer));
