@@ -151,13 +151,13 @@ export default function StockInPage() {
     let cancelled = false;
 
     api.products
-      .list()
-      .then((result) => {
-        if (!cancelled) {
-          setProducts(result);
-          setError("");
-        }
-      })
+  .list()
+  .then((result) => {
+    if (!cancelled) {
+      setProducts(result.products);
+      setError("");
+    }
+  })
       .catch((e) => {
         if (!cancelled) {
           setError(
