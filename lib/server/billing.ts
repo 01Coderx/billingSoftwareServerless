@@ -50,14 +50,75 @@ const Model =
   return Number(result.seq);
 }
 
-export async function listProducts() {
+export async function listAllProducts() {
   const key = "cache:products:all";
+
   const cached = await getCacheSafe<any[]>(key);
-  if (cached !== null) return cached;
-  const products = await Product.find().sort({ id: -1 }).lean();
+
+  if (cached !== null) {
+    return cached;
+  }
+
+  const products = await Product.find()
+    .sort({ id: -1 })
+    .lean();
+
   await setCacheSafe(key, products, 300);
+
   return products;
 }
+
+export async function listProducts({
+  page = 1,
+  limit = 20,
+  search = "",
+}: {
+  page?: number;
+  limit?: number;
+  search?: string;
+} = {}) {
+  const safePage = Math.max(1, Number(page) || 1);
+  const safeLimit = Math.min(
+    50,
+    Math.max(1, Number(limit) || 20)
+  );
+
+  const filter: any = {};
+
+  if (search.trim()) {
+    const regex = {
+      $regex: search.trim(),
+      $options: "i",
+    };
+
+    filter.$or = [
+      { name: regex },
+      { sku: regex },
+      { description: regex },
+    ];
+  }
+
+  const skip = (safePage - 1) * safeLimit;
+
+  const [products, total] = await Promise.all([
+    Product.find(filter)
+      .sort({ id: -1 })
+      .skip(skip)
+      .limit(safeLimit)
+      .lean(),
+
+    Product.countDocuments(filter),
+  ]);
+
+  return {
+    products,
+    total,
+    page: safePage,
+    limit: safeLimit,
+    totalPages: Math.ceil(total / safeLimit),
+  };
+}
+
 export async function getProduct(id: string | number) {
   const key = `cache:products:${Number(id)}`;
   const cached = await getCacheSafe<any>(key);
