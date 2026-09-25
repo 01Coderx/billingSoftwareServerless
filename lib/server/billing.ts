@@ -566,17 +566,51 @@ export async function getCustomerLedger(id: string | number) {
 
 export async function getDashboardAnalytics() {
   const monthly = await Invoice.aggregate([
-    { $match: { status: { $ne: "CANCELLED" } } },
-    { $unwind: "$items" },
-    { $group: {
-      _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
-      revenue: { $sum: "$items.amount" },
-      cost: { $sum: { $multiply: ["$items.costPrice", "$items.quantity"] } },
+  { $match: baseMatch },
+  { $unwind: "$items" },
+  {
+    $group: {
+      _id: "$items.product.id",
       units: { $sum: "$items.quantity" },
-    }},
-    { $addFields: { profit: { $subtract: ["$revenue", "$cost"] } } },
-    { $sort: { "_id.year": 1, "_id.month": 1 } },
-  ]);
+      sales: { $sum: "$items.amount" },
+      cost: {
+        $sum: {
+          $multiply: [
+            "$items.costPrice",
+            "$items.quantity"
+          ]
+        }
+      }
+    }
+  },
+  {
+    $lookup: {
+      from: "products",
+      localField: "_id",
+      foreignField: "id",
+      as: "product"
+    }
+  },
+  { $unwind: "$product" },
+  {
+    $project: {
+      _id: 1,
+      name: "$product.name",
+      sku: "$product.sku",
+      units: 1,
+      sales: 1,
+      cost: 1
+    }
+  },
+  {
+    $addFields: {
+      profit: { $subtract: ["$sales", "$cost"] }
+    }
+  },
+  { $sort: { sales: -1 } },
+  { $limit: 8 }
+])
+  
   const totals = monthly.reduce((a: any, m: any) => {
     a.revenue += Number(m.revenue || 0); a.cost += Number(m.cost || 0); a.units += Number(m.units || 0); a.profit += Number(m.profit || 0); return a;
   }, { revenue: 0, cost: 0, units: 0, profit: 0 });
