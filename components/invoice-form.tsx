@@ -121,10 +121,10 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
   useEffect(() => {
     let active = true;
 
-    Promise.all([api.products.list(), api.customers.list()])
+    Promise.all([api.products.getAll(), api.customers.list()])
       .then(([productData, customerData]) => {
         if (!active) return;
-setProducts(productData?.products || []);
+setProducts(productData || []);
 setCustomers(customerData || []);
 
         if (initialInvoice?.customer) {
