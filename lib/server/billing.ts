@@ -907,17 +907,16 @@ export async function createInvoice(input: any) {
     });
 
     // Invalidate product caches
-    const productCacheKeys = Array.from(
-      new Set(
-        (created?.items || []).map(
-          (item: any) => `cache:products:${Number(item.product?.id)}`
-        )
-      )
-    );
-
+    const productCacheKeys: string[] = Array.from(
+  new Set<string>(
+    (created?.items || []).map(
+      (item: any) => `cache:products:${Number(item.product?.id)}`
+    )
+  )
+);
     await Promise.all([
       invalidateCacheSafe("cache:products:all"),
-      ...productCacheKeys.map((key) => invalidateCacheSafe(key)),
+      ...productCacheKeys.map((key: string) => invalidateCacheSafe(key)),
     ]);
 
     return created;
