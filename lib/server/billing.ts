@@ -892,32 +892,42 @@ export async function createInvoice(
          *
          * This allows invoice creation even
          * when stock is zero.
-         */
-        for (const item of built.items) {
-          const updated =
-            await Product.findOneAndUpdate(
-              {
-                id: item.product.id,
-              },
+         */const stockChanges = Array.from(
+  stockMap(built.items).entries()
+);
 
-              {
-                $inc: {
-                  stock: -item.quantity,
-                },
-              },
+if (stockChanges.length > 0) {
+  const operations = stockChanges.map(
+    ([productId, quantity]) => ({
+      updateOne: {
+        filter: {
+          id: productId,
+        },
+        update: {
+          $inc: {
+            stock: -quantity,
+          },
+        },
+      },
+    })
+  );
 
-              {
-                new: true,
-                session,
-              }
-            ).lean();
+  const result = await Product.bulkWrite(
+    operations,
+    {
+      session,
+    }
+  );
 
-          if (!updated) {
-            throw new Error(
-              `Insufficient stock for ${item.product.name}. Available stock may be lower than requested quantity.`
-            );
-          }
-        }
+  if (
+    Number(result.matchedCount || 0) !==
+    operations.length
+  ) {
+    throw new Error(
+      "Could not update stock for one or more products."
+    );
+  }
+}
 
         built.inventoryAdjusted = true;
 
@@ -939,12 +949,26 @@ export async function createInvoice(
     for (
       const item of created?.items || []
     ) {
-      await invalidateCacheSafe(
+      const productCacheKeys = Array.from(
+  new Set(
+    (created?.items || []).map(
+      (item: any) =>
         `cache:products:${Number(
           item.product?.id
         )}`
-      );
-    }
+    )
+  )
+);
+
+await Promise.all([
+  invalidateCacheSafe(
+    "cache:products:all"
+  ),
+
+  ...productCacheKeys.map((key) =>
+    invalidateCacheSafe(key)
+  ),
+]);
 
     return created;
   } catch (error: any) {
