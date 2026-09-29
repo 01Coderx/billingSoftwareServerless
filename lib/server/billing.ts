@@ -1037,38 +1037,22 @@ export async function updateInvoice(
               (newMap.get(productId) || 0) -
               (oldMap.get(productId) || 0);
 
-            if (delta > 0) {
-              /*
-               * Existing behavior:
-               * increasing invoice quantity
-               * requires available stock.
-               */
-              const product =
-                await Product.findOneAndUpdate(
-                  {
-                    id: productId,
-                    stock: {
-                      $gte: delta,
-                    },
-                  },
-
-                  {
-                    $inc: {
-                      stock: -delta,
-                    },
-                  },
-
-                  {
-                    new: true,
-                    session,
-                  }
-                ).lean<any>();
-
-              if (!product) {
-                throw new Error(
-                  `Insufficient stock to increase quantity for product ${productId}.`
-                );
-              }
+if (delta > 0) {
+  await Product.findOneAndUpdate(
+    {
+      id: productId,
+    },
+    {
+      $inc: {
+        stock: -delta,
+      },
+    },
+    {
+      new: true,
+      session,
+    }
+  ).lean();
+}  
             } else if (delta < 0) {
               await Product.findOneAndUpdate(
                 {
