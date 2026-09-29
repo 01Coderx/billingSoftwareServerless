@@ -988,6 +988,7 @@ await Promise.all([
   } finally {
     await session.endSession();
   }
+  }
 }
 
 /* =========================================================
