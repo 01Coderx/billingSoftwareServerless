@@ -1052,7 +1052,7 @@ if (delta > 0) {
       session,
     }
   ).lean();
-}  
+
             } else if (delta < 0) {
               await Product.findOneAndUpdate(
                 {
