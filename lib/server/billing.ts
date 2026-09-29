@@ -866,117 +866,65 @@ export async function getInvoice(
    CREATE INVOICE
 ========================================================= */
 
-export async function createInvoice(
-  input: any
-) {
-  const session =
-    await mongoose.startSession();
+/* =========================================================
+   CREATE INVOICE
+========================================================= */
+
+export async function createInvoice(input: any) {
+  const session = await mongoose.startSession();
 
   try {
     let created: any;
 
-    await session.withTransaction(
-      async () => {
-        const built: any =
-          await buildInvoice(
-            input,
-            null,
-            session
-          );
+    await session.withTransaction(async () => {
+      const built: any = await buildInvoice(input, null, session);
 
-        /*
-         * IMPORTANT:
-         *
-         * We intentionally do NOT require
-         * stock >= quantity here.
-         *
-         * This allows invoice creation even
-         * when stock is zero.
-         */const stockChanges = Array.from(
-  stockMap(built.items).entries()
-);
+      const stockChanges = Array.from(
+        stockMap(built.items).entries()
+      );
 
-if (stockChanges.length > 0) {
-  const operations = stockChanges.map(
-    ([productId, quantity]) => ({
-      updateOne: {
-        filter: {
-          id: productId,
-        },
-        update: {
-          $inc: {
-            stock: -quantity,
+      if (stockChanges.length > 0) {
+        const operations = stockChanges.map(([productId, quantity]) => ({
+          updateOne: {
+            filter: { id: productId },
+            update: {
+              $inc: { stock: -quantity },
+            },
           },
-        },
-      },
-    })
-  );
+        }));
 
-  const result = await Product.bulkWrite(
-    operations,
-    {
-      session,
-    }
-  );
+        const result = await Product.bulkWrite(operations, { session });
 
-  if (
-    Number(result.matchedCount || 0) !==
-    operations.length
-  ) {
-    throw new Error(
-      "Could not update stock for one or more products."
-    );
-  }
-}
-
-        built.inventoryAdjusted = true;
-
-        const docs =
-          await Invoice.create(
-            [built],
-            { session }
-          );
-
-        created =
-          docs[0].toObject();
+        if (Number(result.matchedCount || 0) !== operations.length) {
+          throw new Error("Could not update stock for one or more products.");
+        }
       }
+
+      built.inventoryAdjusted = true;
+
+      const docs = await Invoice.create([built], { session });
+      created = docs[0].toObject();
+    });
+
+    // Invalidate product caches
+    const productCacheKeys = Array.from(
+      new Set(
+        (created?.items || []).map(
+          (item: any) => `cache:products:${Number(item.product?.id)}`
+        )
+      )
     );
 
-    await invalidateCacheSafe(
-      "cache:products:all"
-    );
-
-    for (
-      const item of created?.items || []
-    ) {
-      const productCacheKeys = Array.from(
-  new Set(
-    (created?.items || []).map(
-      (item: any) =>
-        `cache:products:${Number(
-          item.product?.id
-        )}`
-    )
-  )
-);
-
-await Promise.all([
-  invalidateCacheSafe(
-    "cache:products:all"
-  ),
-
-  ...productCacheKeys.map((key) =>
-    invalidateCacheSafe(key)
-  ),
-]);
+    await Promise.all([
+      invalidateCacheSafe("cache:products:all"),
+      ...productCacheKeys.map((key) => invalidateCacheSafe(key)),
+    ]);
 
     return created;
   } catch (error: any) {
     if (
       /Transaction numbers are only allowed|replica set|transaction/i.test(
-        String(
-          error?.message || ""
-        )
+        String(error?.message || "")
       )
     ) {
       throw new Error(
@@ -988,10 +936,7 @@ await Promise.all([
   } finally {
     await session.endSession();
   }
-  }
-}
-
-/* =========================================================
+}/* =========================================================
    UPDATE INVOICE
 ========================================================= */
 
