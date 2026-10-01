@@ -3,12 +3,16 @@ const token = process.env.UPSTASH_REDIS_REST_TOKEN || "";
 
 async function command<T = unknown>(args: unknown[]): Promise<T | null> {
   if (!url || !token) return null;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(args),
-    cache: "no-store",
-  });
+ const response = await fetch(url, {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify(args),
+  cache: "no-store",
+  signal: AbortSignal.timeout(1500),
+});
   if (!response.ok) throw new Error(`Redis HTTP ${response.status}`);
   const data = await response.json();
   return (data?.result ?? null) as T | null;
@@ -33,10 +37,21 @@ export async function setCacheSafe(key: string, value: unknown, ttlSeconds = 300
   }
 }
 
-export async function invalidateCacheSafe(key: string): Promise<void> {
+export async function invalidateCacheSafe(
+  keyOrKeys: string | string[]
+): Promise<void> {
   try {
-    await command(["DEL", key]);
+    const keys = Array.isArray(keyOrKeys)
+      ? keyOrKeys
+      : [keyOrKeys];
+
+    if (!keys.length) return;
+
+    await command(["DEL", ...keys]);
   } catch (error) {
-    console.error(`[Redis Error] DEL ${key}:`, error);
+    console.error(
+      `[Redis Error] DEL ${keyOrKeys}:`,
+      error
+    );
   }
 }
