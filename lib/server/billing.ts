@@ -936,10 +936,10 @@ export async function createInvoice(input: any) {
     )
   )
 );
-    await Promise.all([
-      invalidateCacheSafe("cache:products:all"),
-      ...productCacheKeys.map((key: string) => invalidateCacheSafe(key)),
-    ]);
+    await invalidateCacheSafe([
+  "cache:products:all",
+  ...productCacheKeys,
+]);
 
     return created;
   } catch (error: any) {
@@ -1089,21 +1089,20 @@ if (delta > 0) {
       }
     );
 
-    await invalidateCacheSafe(
-      "cache:products:all"
-    );
+   const productCacheKeys = [
+  "cache:products:all",
+  ...(updatedInvoice?.items || []).map(
+    (item: any) =>
+      `cache:products:${Number(
+        item.product?.id
+      )}`
+  ),
+];
 
-    for (
-      const item of
-        updatedInvoice?.items || []
-    ) {
-      await invalidateCacheSafe(
-        `cache:products:${Number(
-          item.product?.id
-        )}`
-      );
-    }
-
+await invalidateCacheSafe([
+  ...new Set(productCacheKeys),
+]);
+    
     return updatedInvoice;
   } finally {
     await session.endSession();
