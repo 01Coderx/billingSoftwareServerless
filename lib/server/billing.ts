@@ -570,33 +570,55 @@ async function buildInvoice(
 
   let subtotal = 0;
 
+  // 1.1
+
+  const productIds = [
+  ...new Set(
+    input.items.map((item: any) =>
+      Number(
+        item.product?.id ?? item.productId
+      )
+    )
+  ),
+];
+
+const productQuery = Product.find({
+  id: { $in: productIds },
+});
+
+if (session) {
+  productQuery.session(session);
+}
+
+const products = await productQuery.lean<any[]>();
+
+const productsById = new Map(
+  products.map((product: any) => [
+    Number(product.id),
+    product,
+  ])
+);
+
   for (
     let index = 0;
     index < input.items.length;
     index++
   ) {
+    
     const raw = input.items[index];
 
-    const productId =
-      raw.product?.id ?? raw.productId;
+const productId =
+  raw.product?.id ?? raw.productId;
 
-    if (productId == null) {
-      throw new Error(
-        "Every invoice item must have a product id"
-      );
-    }
+if (productId == null) {
+  throw new Error(
+    "Every invoice item must have a product id"
+  );
+}
 
-    const productQuery = Product.findOne({
-      id: Number(productId),
-    });
-
-    if (session) {
-      productQuery.session(session);
-    }
-
-    const product =
-      await productQuery.lean<any>();
-
+const product =
+  productsById.get(Number(productId));
+    
     const existingItem =
       existing?.items?.find(
         (item: any) =>
