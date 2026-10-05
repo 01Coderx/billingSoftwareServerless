@@ -22,6 +22,7 @@ export async function GET(req: Request) {
 
     const search = searchParams.get("search") || "";
     const date = searchParams.get("date") || "";
+    const status = searchParams.get("status") || "";
 
     return Response.json(
       await listInvoices({
@@ -29,6 +30,7 @@ export async function GET(req: Request) {
         limit,
         search,
         date,
+        status
       })
     );
   } catch (e) {
