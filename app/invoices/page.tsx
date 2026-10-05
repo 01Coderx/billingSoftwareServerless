@@ -115,7 +115,7 @@ export default function InvoicesPage() {
         title="Bills"
         description="Create, inspect, update, delete and download bills directly from your database."
         actionHref="/invoices/new"
-        actionLabel="New bill"
+        actionLabel="Create Invoice"
       />
 
       <div className="mb-4 flex items-center gap-6 border-b border-slate-200">
