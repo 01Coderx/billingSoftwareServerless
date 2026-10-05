@@ -49,8 +49,8 @@ export default function InvoicesPage() {
         page: requestedPage,
         limit: LIMIT,
         search: requestedSearch,
-        date: requestedDate,,
-        status: requestedStatus,
+        date: requestedDate,
+        status: requestedStatus
       });
 
       setInvoices(result.invoices);
