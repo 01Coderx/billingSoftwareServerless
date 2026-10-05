@@ -1976,44 +1976,46 @@ export async function getReportsAnalytics() {
         },
       },
 
-      {
-        $group: {
-          _id: "$customer.id",
+     {
+  $group: {
+    _id: {
+      customerId: "$customer.id",
+      customerName: "$customer.name",
+    },
 
-          name: {
-            $first: "$customer.name",
-          },
+    name: {
+      $first: "$customer.name",
+    },
 
-          email: {
-            $first: "$customer.email",
-          },
+    email: {
+      $first: "$customer.email",
+    },
 
-          phone: {
-            $first: "$customer.phone",
-          },
+    phone: {
+      $first: "$customer.phone",
+    },
 
-          invoices: {
-            $sum: 1,
-          },
+    invoices: {
+      $sum: 1,
+    },
 
-          sales: {
-            $sum: "$total",
-          },
+    sales: {
+      $sum: "$total",
+    },
 
-          paid: {
-            $sum: "$amountPaid",
-          },
+    paid: {
+      $sum: "$amountPaid",
+    },
 
-          outstanding: {
-            $sum: "$amountDue",
-          },
+    outstanding: {
+      $sum: "$amountDue",
+    },
 
-          lastPurchase: {
-            $max: "$createdAt",
-          },
-        },
-      },
-
+    lastPurchase: {
+      $max: "$createdAt",
+    },
+  },
+},
       {
         $addFields: {
           recurring: {
@@ -2047,28 +2049,30 @@ export async function getReportsAnalytics() {
         },
       },
 
-      {
-        $group: {
-          _id: "$customer.id",
+   {
+  $group: {
+    _id: {
+      customerId: "$customer.id",
+      customerName: "$customer.name",
+    },
 
-          name: {
-            $first: "$customer.name",
-          },
+    name: {
+      $first: "$customer.name",
+    },
 
-          invoices: {
-            $sum: 1,
-          },
+    invoices: {
+      $sum: 1,
+    },
 
-          sales: {
-            $sum: "$total",
-          },
+    sales: {
+      $sum: "$total",
+    },
 
-          outstanding: {
-            $sum: "$amountDue",
-          },
-        },
-      },
-
+    outstanding: {
+      $sum: "$amountDue",
+    },
+  },
+},
       {
         $sort: {
           sales: -1,
@@ -2112,8 +2116,8 @@ export async function getReportsAnalytics() {
     customerSummary.map(
       (customer: any) => ({
         id: Number(
-          customer._id
-        ),
+  customer._id.customerId
+),
 
         name:
           customer.name ||
@@ -2270,9 +2274,9 @@ export async function getReportsAnalytics() {
     topCustomers:
       topCustomers.map(
         (customer: any) => ({
-          id: Number(
-            customer._id
-          ),
+         id: Number(
+  customer._id.customerId
+),
 
           name:
             customer.name ||
