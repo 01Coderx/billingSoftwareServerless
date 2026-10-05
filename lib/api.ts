@@ -152,6 +152,7 @@ export const api = {
       limit?: number;
       search?: string;
       date?: string;
+      status?: string;
     }) => {
       const query = new URLSearchParams();
 
@@ -159,6 +160,7 @@ export const api = {
       if (params?.limit) query.set("limit", String(params.limit));
       if (params?.search) query.set("search", params.search);
       if (params?.date) query.set("date", params.date);
+      if (params?.status) query.set("status", params.status);
 
       const queryString = query.toString();
 
