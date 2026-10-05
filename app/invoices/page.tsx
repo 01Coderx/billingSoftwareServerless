@@ -21,6 +21,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default function InvoicesPage() {
+  const [statusFilter, setStatusFilter] = useState("");
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -37,7 +38,8 @@ export default function InvoicesPage() {
   async function load(
     requestedPage = page,
     requestedSearch = search,
-    requestedDate = dateFilter
+    requestedDate = dateFilter,
+    requestedStatus = statusFilter
   ) {
     setLoading(true);
     setError("");
@@ -47,7 +49,8 @@ export default function InvoicesPage() {
         page: requestedPage,
         limit: LIMIT,
         search: requestedSearch,
-        date: requestedDate,
+        date: requestedDate,,
+        status: requestedStatus,
       });
 
       setInvoices(result.invoices);
@@ -69,7 +72,7 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      load(1, search, dateFilter);
+      load(1, search, dateFilter, statusFilter);
     }, 300);
 
     return () => clearTimeout(timer);
@@ -89,7 +92,7 @@ export default function InvoicesPage() {
           ? page - 1
           : page;
 
-      await load(nextPage, search, dateFilter);
+      await load(nextPage, search, dateFilter, statusFilter);
     } catch (e) {
       setError(
         e instanceof Error
@@ -114,6 +117,33 @@ export default function InvoicesPage() {
         actionHref="/invoices/new"
         actionLabel="New bill"
       />
+
+      <div className="mb-4 flex items-center gap-6 border-b border-slate-200">
+  {[
+    { label: "All", value: "" },
+    { label: "Pending", value: "PENDING" },
+    { label: "Paid", value: "PAID" },
+    { label: "Cancelled", value: "CANCELLED" },
+    { label: "Drafts", value: "DRAFT" },
+  ].map((tab) => (
+    <button
+      key={tab.value}
+      type="button"
+      onClick={() => {
+        setStatusFilter(tab.value);
+        setPage(1);
+        load(1, search, dateFilter, tab.value);
+      }}
+      className={`border-b-2 px-1 pb-3 text-sm font-semibold transition ${
+        statusFilter === tab.value
+          ? "border-blue-600 text-blue-600"
+          : "border-transparent text-slate-600 hover:text-slate-900"
+      }`}
+    >
+      {tab.label}
+    </button>
+  ))}
+</div>
 
       {error && (
         <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
@@ -186,7 +216,7 @@ export default function InvoicesPage() {
             {/* REFRESH */}
             <Button
               variant="secondary"
-              onClick={() => load(page, search, dateFilter)}
+              onClick={() => load(page, search, dateFilter, statusFilter)}
               disabled={loading}
             >
               <RefreshCw
