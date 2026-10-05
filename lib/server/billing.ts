@@ -802,11 +802,13 @@ export async function listInvoices({
   limit = 20,
   search = "",
   date = "",
+   status = "",
 }: {
   page?: number;
   limit?: number;
   search?: string;
   date?: string;
+  status?: string;
 } = {}) {
   const filter: any = {};
 
@@ -837,7 +839,21 @@ export async function listInvoices({
       $lte: end,
     };
   }
-
+  
+if (status) {
+  if (status === "PAID") {
+    filter.paymentStatus = "PAID";
+  } else if (status === "PENDING") {
+    filter.paymentStatus = {
+      $in: ["UNPAID", "PARTIAL"],
+    };
+  } else if (status === "CANCELLED") {
+    filter.status = "CANCELLED";
+  } else if (status === "DRAFT") {
+    filter.status = "DRAFT";
+  }
+}
+  
   const safePage = Math.max(
     1,
     Number(page) || 1
