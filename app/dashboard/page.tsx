@@ -45,12 +45,42 @@ export default function Dashboard() {
   sku?: string | null;
   stock: number;
 }> = data?.lowStockProducts || [];
-  const cards=[
-    ["This month revenue",formatCurrency(cm.revenue),IndianRupee,`${Number(cm.units).toLocaleString("en-IN")} units sold this month`],
-    ["Total units sold",Number(t.units).toLocaleString("en-IN"),Package,"All non-cancelled invoices"],
-    ["Gross profit",formatCurrency(t.profit),TrendingUp,"Revenue − item cost"],
-    ["Outstanding",formatCurrency(t.outstanding),ReceiptText,"Unpaid + partial bills"],
-  ];
+  
+const cards = [
+  {
+    label: "This month revenue",
+    value: formatCurrency(cm.revenue),
+    Icon: IndianRupee,
+    sub: `${Number(cm.units).toLocaleString("en-IN")} units sold this month`,
+    iconStyle: "bg-blue-50 text-blue-700",
+    accent: "bg-blue-500",
+  },
+  {
+    label: "Total units sold",
+    value: Number(t.units).toLocaleString("en-IN"),
+    Icon: Package,
+    sub: "All non-cancelled invoices",
+    iconStyle: "bg-violet-50 text-violet-700",
+    accent: "bg-violet-500",
+  },
+  {
+    label: "Gross profit",
+    value: formatCurrency(t.profit),
+    Icon: TrendingUp,
+    sub: "Revenue minus item cost",
+    iconStyle: "bg-emerald-50 text-emerald-700",
+    accent: "bg-emerald-500",
+  },
+  {
+    label: "Outstanding",
+    value: formatCurrency(t.outstanding),
+    Icon: ReceiptText,
+    sub: "Unpaid and partially paid bills",
+    iconStyle: "bg-amber-50 text-amber-700",
+    accent: "bg-amber-500",
+  },
+];
+
   return <div className="fade-in"><PageHeader title="Dashboard" description="Real-time sales, inventory and profitability from MongoDB." actionHref="/invoices/new" actionLabel="Create invoice"/>
     
 {error && (
@@ -76,7 +106,48 @@ export default function Dashboard() {
   </div>
 )}
 
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{cards.map(([label,value,Icon,sub]:any)=><div className="card p-5" key={label}><div className="flex justify-between"><div className="grid size-11 place-items-center rounded-2xl bg-blue-50 text-blue-600"><Icon size={20}/></div><ArrowUpRight size={17} className="text-slate-300"/></div><div className="mt-5 text-2xl font-black tracking-tight">{value}</div><div className="mt-1 text-sm font-bold text-slate-700">{label}</div><div className="mt-1 text-xs text-slate-500">{sub}</div></div>)}</div>
+   
+<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  {cards.map((card) => {
+    const Icon = card.Icon;
+
+    return (
+      <div
+        key={card.label}
+        className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+      >
+        <div
+          className={`absolute inset-x-0 top-0 h-1 ${card.accent}`}
+        />
+
+        <div className="flex items-center justify-between">
+          <div
+            className={`grid size-11 place-items-center rounded-2xl ${card.iconStyle}`}
+          >
+            <Icon size={21} />
+          </div>
+
+          <div className="grid size-8 place-items-center rounded-full bg-slate-50 text-slate-400 transition-colors group-hover:bg-blue-50 group-hover:text-blue-600">
+            <ArrowUpRight size={17} />
+          </div>
+        </div>
+
+        <p className="mt-5 break-words text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">
+          {card.value}
+        </p>
+
+        <h2 className="mt-2 text-sm font-bold text-slate-700">
+          {card.label}
+        </h2>
+
+        <p className="mt-1.5 text-xs leading-5 text-slate-500">
+          {card.sub}
+        </p>
+      </div>
+    );
+  })}
+</div>
+
     <div className="mt-5 grid gap-5 xl:grid-cols-2"><section className="card p-5"><div><h2 className="font-black">Monthly sales & profit</h2><p className="text-xs text-slate-500">Revenue, cost and gross profit by month.</p></div><div className="mt-5 h-80"><ResponsiveContainer width="100%" height="100%"><BarChart data={data?.monthly||[]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis/><Tooltip formatter={(v:any)=>formatCurrency(Number(v))}/><Bar dataKey="revenue" name="Revenue" fill="#2563eb"/><Bar dataKey="profit" name="Profit" fill="#16a34a"/></BarChart></ResponsiveContainer></div></section>
     <section className="card p-5"><div><h2 className="font-black">Units sold trend</h2><p className="text-xs text-slate-500">Total quantities invoiced each month.</p></div><div className="mt-5 h-80"><ResponsiveContainer width="100%" height="100%"><LineChart data={data?.monthly||[]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis/><Tooltip/><Line type="monotone" dataKey="units" name="Units" stroke="#7c3aed" strokeWidth={3}/></LineChart></ResponsiveContainer></div></section></div>
     <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_1fr]">
