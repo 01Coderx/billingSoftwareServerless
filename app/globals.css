@@ -308,3 +308,42 @@ select,
 button {
   -webkit-tap-highlight-color: transparent;
 }
+
+
+/* Reusable skeleton loading */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: #e9eef5;
+  border-radius: 0.5rem;
+}
+
+.skeleton-shimmer::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  content: "";
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.72) 50%,
+    transparent 100%
+  );
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer::after {
+    animation: none;
+    transform: none;
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
