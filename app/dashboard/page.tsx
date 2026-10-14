@@ -52,7 +52,30 @@ export default function Dashboard() {
     ["Outstanding",formatCurrency(t.outstanding),ReceiptText,"Unpaid + partial bills"],
   ];
   return <div className="fade-in"><PageHeader title="Dashboard" description="Real-time sales, inventory and profitability from MongoDB." actionHref="/invoices/new" actionLabel="Create invoice"/>
-    {error&&<div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">{error}</div>}
+    
+{error && (
+  <div
+    role="alert"
+    className="mb-5 flex flex-col gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <div>
+      <p className="text-sm font-bold text-rose-800">
+        Could not load dashboard analytics
+      </p>
+      <p className="mt-1 text-sm text-rose-700">{error}</p>
+    </div>
+
+    <Button
+      type="button"
+      variant="secondary"
+      onClick={load}
+      disabled={loading}
+    >
+      Retry
+    </Button>
+  </div>
+)}
+
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{cards.map(([label,value,Icon,sub]:any)=><div className="card p-5" key={label}><div className="flex justify-between"><div className="grid size-11 place-items-center rounded-2xl bg-blue-50 text-blue-600"><Icon size={20}/></div><ArrowUpRight size={17} className="text-slate-300"/></div><div className="mt-5 text-2xl font-black tracking-tight">{value}</div><div className="mt-1 text-sm font-bold text-slate-700">{label}</div><div className="mt-1 text-xs text-slate-500">{sub}</div></div>)}</div>
     <div className="mt-5 grid gap-5 xl:grid-cols-2"><section className="card p-5"><div><h2 className="font-black">Monthly sales & profit</h2><p className="text-xs text-slate-500">Revenue, cost and gross profit by month.</p></div><div className="mt-5 h-80"><ResponsiveContainer width="100%" height="100%"><BarChart data={data?.monthly||[]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis/><Tooltip formatter={(v:any)=>formatCurrency(Number(v))}/><Bar dataKey="revenue" name="Revenue" fill="#2563eb"/><Bar dataKey="profit" name="Profit" fill="#16a34a"/></BarChart></ResponsiveContainer></div></section>
     <section className="card p-5"><div><h2 className="font-black">Units sold trend</h2><p className="text-xs text-slate-500">Total quantities invoiced each month.</p></div><div className="mt-5 h-80"><ResponsiveContainer width="100%" height="100%"><LineChart data={data?.monthly||[]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis/><Tooltip/><Line type="monotone" dataKey="units" name="Units" stroke="#7c3aed" strokeWidth={3}/></LineChart></ResponsiveContainer></div></section></div>
