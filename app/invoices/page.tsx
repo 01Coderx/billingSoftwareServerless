@@ -118,32 +118,39 @@ export default function InvoicesPage() {
         actionLabel="Create Invoice"
       />
 
-      <div className="mb-4 flex items-center gap-6 border-b border-slate-200">
+
+<div className="mb-5 flex w-full gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1">
   {[
     { label: "All", value: "" },
     { label: "Pending", value: "PENDING" },
     { label: "Paid", value: "PAID" },
     { label: "Cancelled", value: "CANCELLED" },
     { label: "Drafts", value: "DRAFT" },
-  ].map((tab) => (
-    <button
-      key={tab.value}
-      type="button"
-      onClick={() => {
-        setStatusFilter(tab.value);
-        setPage(1);
-        load(1, search, dateFilter, tab.value);
-      }}
-      className={`border-b-2 px-1 pb-3 text-sm font-semibold transition ${
-        statusFilter === tab.value
-          ? "border-blue-600 text-blue-600"
-          : "border-transparent text-slate-600 hover:text-slate-900"
-      }`}
-    >
-      {tab.label}
-    </button>
-  ))}
+  ].map((tab) => {
+    const active = statusFilter === tab.value;
+
+    return (
+      <button
+        key={tab.value}
+        type="button"
+        aria-pressed={active}
+        onClick={() => {
+          setStatusFilter(tab.value);
+          setPage(1);
+          load(1, search, dateFilter, tab.value);
+        }}
+        className={`shrink-0 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
+          active
+            ? "bg-white text-blue-700 shadow-sm ring-1 ring-slate-200"
+            : "text-slate-500 hover:bg-white/70 hover:text-slate-900"
+        }`}
+      >
+        {tab.label}
+      </button>
+    );
+  })}
 </div>
+
 
       {error && (
         <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
