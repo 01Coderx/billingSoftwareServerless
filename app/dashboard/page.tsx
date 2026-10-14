@@ -8,7 +8,19 @@ import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { DashboardSkeleton } from "@/components/data-state";
 import { PageHeader } from "@/components/page-header";
-import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+} from "recharts";
+
 
 export default function Dashboard() {
   const [data, setData] = useState<any>(null);
@@ -148,9 +160,180 @@ const cards = [
   })}
 </div>
 
-    <div className="mt-5 grid gap-5 xl:grid-cols-2"><section className="card p-5"><div><h2 className="font-black">Monthly sales & profit</h2><p className="text-xs text-slate-500">Revenue, cost and gross profit by month.</p></div><div className="mt-5 h-80"><ResponsiveContainer width="100%" height="100%"><BarChart data={data?.monthly||[]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis/><Tooltip formatter={(v:any)=>formatCurrency(Number(v))}/><Bar dataKey="revenue" name="Revenue" fill="#2563eb"/><Bar dataKey="profit" name="Profit" fill="#16a34a"/></BarChart></ResponsiveContainer></div></section>
-    <section className="card p-5"><div><h2 className="font-black">Units sold trend</h2><p className="text-xs text-slate-500">Total quantities invoiced each month.</p></div><div className="mt-5 h-80"><ResponsiveContainer width="100%" height="100%"><LineChart data={data?.monthly||[]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="label"/><YAxis/><Tooltip/><Line type="monotone" dataKey="units" name="Units" stroke="#7c3aed" strokeWidth={3}/></LineChart></ResponsiveContainer></div></section></div>
-    <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_1fr]">
+    
+<div className="mt-6 grid gap-5 xl:grid-cols-2">
+  {/* Monthly Sales and Profit */}
+  <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h2 className="text-base font-extrabold tracking-tight text-slate-900">
+          Monthly sales &amp; profit
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Compare your revenue and gross profit month by month.
+        </p>
+      </div>
+
+      <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">
+        Monthly overview
+      </span>
+    </div>
+
+    <div className="mt-6 h-72 w-full sm:h-80">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={data?.monthly || []}
+          margin={{ top: 8, right: 8, left: 4, bottom: 4 }}
+          barGap={6}
+        >
+          <CartesianGrid
+            stroke="#e2e8f0"
+            strokeDasharray="4 4"
+            vertical={false}
+          />
+
+          <XAxis
+            dataKey="label"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: "#64748b", fontSize: 12 }}
+            tickMargin={12}
+          />
+
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            width={64}
+            tick={{ fill: "#64748b", fontSize: 11 }}
+            tickFormatter={(value: number) =>
+              value >= 1000
+                ? `₹${(value / 1000).toLocaleString("en-IN", {
+                    maximumFractionDigits: 1,
+                  })}k`
+                : `₹${value}`
+            }
+          />
+
+          <Tooltip
+            formatter={(value: any, name: any) => [
+              formatCurrency(Number(value)),
+              name,
+            ]}
+            contentStyle={{
+              borderRadius: 12,
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 8px 24px rgba(15,23,42,0.08)",
+              fontSize: 12,
+            }}
+            cursor={{ fill: "#f8fafc" }}
+          />
+
+          <Legend
+            verticalAlign="bottom"
+            height={36}
+            iconType="circle"
+            wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
+          />
+
+          <Bar
+            dataKey="revenue"
+            name="Revenue"
+            fill="#2563eb"
+            radius={[5, 5, 0, 0]}
+            maxBarSize={32}
+          />
+
+          <Bar
+            dataKey="profit"
+            name="Profit"
+            fill="#10b981"
+            radius={[5, 5, 0, 0]}
+            maxBarSize={32}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  </section>
+
+  {/* Units Sold Trend */}
+  <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h2 className="text-base font-extrabold tracking-tight text-slate-900">
+          Units sold trend
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Track the quantity invoiced over time.
+        </p>
+      </div>
+
+      <span className="rounded-full bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700">
+        Sales activity
+      </span>
+    </div>
+
+    <div className="mt-6 h-72 w-full sm:h-80">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={data?.monthly || []}
+          margin={{ top: 12, right: 12, left: 4, bottom: 4 }}
+        >
+          <CartesianGrid
+            stroke="#e2e8f0"
+            strokeDasharray="4 4"
+            vertical={false}
+          />
+
+          <XAxis
+            dataKey="label"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: "#64748b", fontSize: 12 }}
+            tickMargin={12}
+          />
+
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            width={42}
+            tick={{ fill: "#64748b", fontSize: 12 }}
+            tickFormatter={(value: number) =>
+              Number(value).toLocaleString("en-IN")
+            }
+          />
+
+          <Tooltip
+            formatter={(value: any) => [
+              Number(value).toLocaleString("en-IN"),
+              "Units",
+            ]}
+            contentStyle={{
+              borderRadius: 12,
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 8px 24px rgba(15,23,42,0.08)",
+              fontSize: 12,
+            }}
+          />
+
+          <Line
+            type="monotone"
+            dataKey="units"
+            name="Units"
+            stroke="#7c3aed"
+            strokeWidth={3}
+            dot={false}
+            activeDot={{
+              r: 5,
+              strokeWidth: 2,
+              fill: "#ffffff",
+            }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  </section>
+</div>
+<div className="mt-5 grid gap-5 xl:grid-cols-[1fr_1fr]">
       <section className="card p-5">
         <div className="flex items-center justify-between"><div>
           <h2 className="font-black">Inventory attention</h2>
