@@ -13,7 +13,7 @@ import { api } from "@/lib/api";
 import type { Customer } from "@/types/billing";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
-import { LoadingState } from "@/components/data-state";
+import { Skeleton } from "@/components/data-state";
 import { initials } from "@/lib/utils";
 
 const empty: Customer = {
@@ -124,9 +124,75 @@ export default function CustomersPage() {
     }
   }
 
-  if (loading) {
-    return <LoadingState label="Loading customer directory…" />;
-  }
+
+if (loading) {
+  return (
+    <div className="fade-in space-y-5" role="status" aria-label="Loading customers">
+      {/* Page heading */}
+      <div className="space-y-2">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-8 w-44" />
+        <Skeleton className="h-4 w-72 max-w-full" />
+      </div>
+
+      <div className="grid items-start gap-5 xl:grid-cols-[1fr_350px]">
+        {/* Customer list */}
+        <section className="card overflow-hidden">
+          <div className="flex items-center gap-3 border-b border-slate-100 p-5">
+            <Skeleton className="h-11 flex-1 rounded-xl" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+
+          <div className="divide-y divide-slate-100">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-3 p-5"
+              >
+                <Skeleton className="size-11 shrink-0 rounded-full" />
+
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-4 w-40 max-w-full" />
+                  <Skeleton className="h-3 w-56 max-w-full" />
+                  <Skeleton className="h-3 w-32 max-w-full" />
+                </div>
+
+                <Skeleton className="size-9 shrink-0 rounded-lg" />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Add customer form placeholder */}
+        <section className="card space-y-5 p-5">
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-10 rounded-xl" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-3 w-44 max-w-full" />
+            </div>
+          </div>
+
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="space-y-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton
+                className={`w-full ${
+                  index === 3 ? "h-24" : "h-11"
+                }`}
+              />
+            </div>
+          ))}
+
+          <Skeleton className="h-10 w-full rounded-xl" />
+        </section>
+      </div>
+
+      <span className="sr-only">Loading customer directory…</span>
+    </div>
+  );
+}
+
 
   return (
     <div className="fade-in">
