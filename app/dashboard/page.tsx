@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 // import type { Product } from "@/types/billing";
 import { Button } from "@/components/ui/button";
-import { LoadingState } from "@/components/data-state";
+import { DashboardSkeleton } from "@/components/data-state";
 import { PageHeader } from "@/components/page-header";
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
