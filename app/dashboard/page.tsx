@@ -36,7 +36,7 @@ export default function Dashboard() {
   }
 }
   useEffect(()=>{load()},[]);
-  if (loading) return <LoadingState label="Loading live analytics…"/>;
+  if (loading) return <DashboardSkeleton />;;
   const t=data?.totals||{revenue:0,cost:0,profit:0,units:0,outstanding:0};
   const cm=data?.currentMonth||{revenue:0,units:0,profit:0};
   const low: Array<{
