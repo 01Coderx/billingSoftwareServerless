@@ -16,7 +16,7 @@ import { api } from "@/lib/api";
 import type { Invoice } from "@/types/billing";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
-import { LoadingState, EmptyState } from "@/components/data-state";
+import { TableSkeleton, EmptyState } from "@/components/data-state";
 import { StatusBadge } from "@/components/status-badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -104,9 +104,9 @@ export default function InvoicesPage() {
     }
   }
 
-  if (loading && !invoices.length) {
-    return <LoadingState label="Loading bills…" />;
-  }
+ if (loading && !invoices.length) {
+  return <TableSkeleton rows={6} />;
+}
 
   return (
     <div className="fade-in">
