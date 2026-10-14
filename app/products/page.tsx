@@ -14,7 +14,7 @@ import { api } from "@/lib/api";
 import type { Product } from "@/types/billing";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
-import { LoadingState } from "@/components/data-state";
+import { TableSkeleton, EmptyState } from "@/components/data-state";
 import { formatCurrency } from "@/lib/utils";
 
 const empty: Product = {
@@ -170,7 +170,7 @@ async function remove(id: number) {
   }
 }
   if (loading) {
-    return <LoadingState label="Loading product catalogue…" />;
+     return <TableSkeleton rows={8} />;
   }
 
   return (
