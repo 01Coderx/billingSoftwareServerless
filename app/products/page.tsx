@@ -104,13 +104,13 @@ export default function ProductsPage() {
     setSearch(value);
     setPage(1);
 
-    if (searchTimer.current) {
-      window.clearTimeout(searchTimer.current);
-    }
+   if (searchTimer.current) {
+  clearTimeout(searchTimer.current);
+}
 
-    searchTimer.current = window.setTimeout(() => {
-      void load(1, value);
-    }, 300);
+searchTimer.current = setTimeout(() => {
+  void load(1, value);
+}, 300);
   }
 
   function clearSearch() {
