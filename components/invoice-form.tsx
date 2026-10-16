@@ -427,7 +427,7 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
           <div className="h-8 w-64 animate-pulse rounded-lg bg-slate-200" />
           <div className="h-4 w-96 max-w-full animate-pulse rounded bg-slate-100" />
         </div>
-        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid min-w-0 items-start gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-5">
             {[1, 2, 3].map((item) => (
               <div key={item} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -504,7 +504,7 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
         </div>
       )}
 
-      <form onSubmit={submit} className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <form onSubmit={submit} className="grid min-w-0 items-start gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]">
         <section className="min-w-0 space-y-5">
           {/* Customer and invoice details */}
           <section className="overflow-visible rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -690,23 +690,26 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
                   const id = line.product.id!;
                   const amount = safeNumber(line.rate) * safeNumber(line.quantity);
                   return (
-                    <article key={id} className="grid gap-4 px-5 py-5 transition-colors hover:bg-slate-50/60 sm:px-6 md:grid-cols-[minmax(0,1fr)_135px_minmax(180px,0.9fr)] xl:grid-cols-[minmax(0,1fr)_125px_185px_120px_40px] xl:items-center">
-                      <div className="flex min-w-0 items-start gap-3 xl:items-center">
+                    <article
+                      key={id}
+                      className="grid min-w-0 grid-cols-1 gap-4 px-4 py-4 transition-colors hover:bg-slate-50/60 sm:grid-cols-2 sm:px-5 2xl:grid-cols-[minmax(220px,1fr)_minmax(115px,125px)_minmax(165px,185px)_minmax(110px,120px)_40px] 2xl:items-center 2xl:px-6 2xl:py-5"
+                    >
+                      <div className="flex min-w-0 items-start gap-3 sm:col-span-2 2xl:col-span-1 2xl:items-center">
                         <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-600"><Boxes size={18} /></div>
                         <div className="min-w-0 flex-1">
-                          <p className="break-words text-sm font-extrabold leading-5 text-slate-900">{getProductLabel(line.product)}</p>
-                          <p className="mt-1 break-words text-xs leading-5 text-slate-500">
+                          <p className="[overflow-wrap:anywhere] text-sm font-extrabold leading-5 text-slate-900">{getProductLabel(line.product)}</p>
+                          <p className="mt-1 [overflow-wrap:anywhere] text-xs leading-5 text-slate-500">
                             {line.product.sku || "No SKU"}{" · "}Cost {formatCurrency(line.product.costPrice)}{" · "}Default {formatCurrency(line.product.price)}
                           </p>
                         </div>
                       </div>
 
-                      <label className="block text-xs font-bold text-slate-500">
+                      <label className="block min-w-0 text-xs font-bold text-slate-500">
                         Selling rate (₹)
                         <input className={`${inputClassName} mt-1.5`} type="number" min="0" step="0.01" value={line.rate} onChange={(e) => changeRate(id, e.target.value)} aria-label={`Selling rate for ${getProductLabel(line.product)}`} />
                       </label>
 
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-xs font-bold text-slate-500">Quantity</p>
                         <div className="mt-1.5 flex items-center gap-2">
                           <button type="button" className="grid size-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onClick={() => changeQty(id, -0.1)} aria-label={`Decrease quantity for ${getProductLabel(line.product)}`}><Minus size={15} /></button>
@@ -716,12 +719,12 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
                         <p className="mt-1.5 text-[10px] leading-4 text-slate-400">Weight example: 0.1 = 100g · 0.5 = 500g</p>
                       </div>
 
-                      <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 xl:block xl:bg-transparent xl:px-0 xl:py-0 xl:text-right">
+                      <div className="flex min-w-0 items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 2xl:block 2xl:bg-transparent 2xl:px-0 2xl:py-0 2xl:text-right">
                         <p className="text-xs font-bold text-slate-500">Line total</p>
                         <p className="mt-0.5 text-base font-extrabold tabular-nums text-slate-900">{formatCurrency(amount)}</p>
                       </div>
 
-                      <button type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-100 bg-white px-3 text-xs font-bold text-rose-600 transition hover:border-rose-200 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 xl:size-10 xl:px-0" onClick={() => removeLine(id)} aria-label={`Remove ${getProductLabel(line.product)}`} title="Remove item"><Trash2 size={16} /><span className="xl:hidden">Remove item</span></button>
+                      <button type="button" className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-rose-100 bg-white px-3 text-xs font-bold text-rose-600 transition hover:border-rose-200 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 sm:w-auto 2xl:size-10 2xl:px-0" onClick={() => removeLine(id)} aria-label={`Remove ${getProductLabel(line.product)}`} title="Remove item"><Trash2 size={16} /><span className="2xl:hidden">Remove item</span></button>
                     </article>
                   );
                 })}
@@ -764,7 +767,7 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
         </section>
 
         {/* Sticky invoice summary */}
-        <aside className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm xl:sticky xl:top-24">
+        <aside className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm 2xl:sticky 2xl:top-24">
           <div className="bg-slate-950 px-5 py-5 text-white sm:px-6">
             <div className="flex items-center gap-3">
               <div className="grid size-10 place-items-center rounded-xl bg-white/10 text-blue-200 ring-1 ring-white/10"><FileText size={19} /></div>
