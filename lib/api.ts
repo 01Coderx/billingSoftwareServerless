@@ -138,7 +138,12 @@ export const api = {
   },
 
   reports: {
-    analytics: () => request<any>("/api/reports"),
+    analytics: (month?: string) => {
+      const query = new URLSearchParams();
+      if (month) query.set("month", month);
+      const queryString = query.toString();
+      return request<any>(`/api/reports${queryString ? `?${queryString}` : ""}`);
+    },
   },
 
   settings: {
