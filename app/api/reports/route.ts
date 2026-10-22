@@ -4,10 +4,12 @@ import { jsonError } from "@/lib/server/api-error";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     await connectDB();
-    return Response.json(await getReportsAnalytics());
+    const { searchParams } = new URL(req.url);
+    const month = searchParams.get("month") || "";
+    return Response.json(await getReportsAnalytics(month));
   } catch (e) {
     return jsonError(e);
   }
