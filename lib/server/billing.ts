@@ -1757,15 +1757,27 @@ export async function getDashboardAnalytics() {
    REPORTS ANALYTICS
 ========================================================= */
 
-export async function getReportsAnalytics() {
+export async function getReportsAnalytics(month = "") {
   const LOW_STOCK_THRESHOLD = 5;
   const TARGET_STOCK = 10;
 
-  const baseMatch = {
+  const baseMatch: Record<string, any> = {
     status: {
       $ne: "CANCELLED",
     },
   };
+
+  // Accept only a real YYYY-MM value. Date bounds are UTC to match
+  // the existing monthly sales aggregation and avoid local-time drift.
+  const selectedMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(month) ? month : "";
+  const reportMatch: Record<string, any> = { ...baseMatch };
+
+  if (selectedMonth) {
+    const [year, monthNumber] = selectedMonth.split("-").map(Number);
+    const start = new Date(Date.UTC(year, monthNumber - 1, 1));
+    const end = new Date(Date.UTC(year, monthNumber, 1));
+    reportMatch.createdAt = { $gte: start, $lt: end };
+  }
 
   const [
     productSummary,
@@ -1774,6 +1786,7 @@ export async function getReportsAnalytics() {
     customerSummary,
     topCustomers,
     lowStockProducts,
+    periodSummary,
   ] = await Promise.all([
     /* -----------------------------------------------------
        PRODUCT ANALYSIS
@@ -1834,7 +1847,7 @@ export async function getReportsAnalytics() {
 
     Invoice.aggregate([
       {
-        $match: baseMatch,
+        $match: reportMatch,
       },
 
       {
@@ -1913,9 +1926,6 @@ export async function getReportsAnalytics() {
         },
       },
 
-      {
-        $limit: 8,
-      },
     ]),
 
     /* -----------------------------------------------------
@@ -1951,13 +1961,20 @@ export async function getReportsAnalytics() {
 
       {
         $sort: {
-          "_id.year": 1,
-          "_id.month": 1,
+          "_id.year": -1,
+          "_id.month": -1,
         },
       },
 
       {
         $limit: 12,
+      },
+
+      {
+        $sort: {
+          "_id.year": 1,
+          "_id.month": 1,
+        },
       },
     ]),
 
@@ -1968,7 +1985,7 @@ export async function getReportsAnalytics() {
     Invoice.aggregate([
       {
         $match: {
-          ...baseMatch,
+          ...reportMatch,
 
           "customer.id": {
             $ne: null,
@@ -2041,7 +2058,7 @@ export async function getReportsAnalytics() {
     Invoice.aggregate([
       {
         $match: {
-          ...baseMatch,
+          ...reportMatch,
 
           "customer.id": {
             $ne: null,
@@ -2079,9 +2096,6 @@ export async function getReportsAnalytics() {
         },
       },
 
-      {
-        $limit: 8,
-      },
     ]),
 
     /* -----------------------------------------------------
@@ -2107,6 +2121,19 @@ export async function getReportsAnalytics() {
         costPrice: 1,
       })
       .lean(),
+
+    Invoice.aggregate([
+      { $match: reportMatch },
+      {
+        $group: {
+          _id: null,
+          sales: { $sum: "$total" },
+          invoices: { $sum: 1 },
+          amountPaid: { $sum: "$amountPaid" },
+          outstanding: { $sum: "$amountDue" },
+        },
+      },
+    ]),
   ]);
 
   const ps =
@@ -2154,7 +2181,16 @@ export async function getReportsAnalytics() {
       })
     );
 
+  const selectedPeriod = periodSummary[0] || {};
+
   return {
+    selectedMonth: selectedMonth || null,
+    periodSummary: {
+      sales: money(selectedPeriod.sales),
+      invoices: Number(selectedPeriod.invoices || 0),
+      amountPaid: money(selectedPeriod.amountPaid),
+      outstanding: money(selectedPeriod.outstanding),
+    },
     productAnalysis: {
       products: Number(
         ps.products || 0
@@ -2308,8 +2344,7 @@ export async function getReportsAnalytics() {
             b: any
           ) =>
             b.sales - a.sales
-        )
-        .slice(0, 8),
+        ),
 
     lowStockProducts:
       lowStockProducts.map(
